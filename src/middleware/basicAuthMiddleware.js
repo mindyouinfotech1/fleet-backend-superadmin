@@ -1,11 +1,6 @@
 export const basicAuthMiddleware = (req, res, next) => {
   try {
     const basicHeader = req.headers["x-basic-auth"];
-    // const userId = req.headers["x-user-id"];
-    // const userRole = req.headers["x-user-role"];
-    // console.log("Received X-Basic-Auth header:", basicHeader);
-    // console.log("User ID:", userId);
-    // console.log("User Role:", userRole);
 
     if (!basicHeader || !basicHeader.startsWith("Basic ")) {
       return res
@@ -14,9 +9,6 @@ export const basicAuthMiddleware = (req, res, next) => {
     }
 
     const token = basicHeader.split(" ")[1];
-
-    // console.log("Received Basic token:", token);
-    // console.log("Expected Basic token:", process.env.BASIC_TOKEN);
 
     if (token === process.env.BASIC_TOKEN) {
       return next();

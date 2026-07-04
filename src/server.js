@@ -21,6 +21,8 @@ import addressRoutes from "./routes/Address.js";
 import partReplacementRoutes from "./routes/User/Equipment/PartReplacement.js";
 import tyreReplacementRoutes from "./routes/User/Equipment/TyreReplacement.js";
 import expenseRoutes from "./routes/User/Equipment/Expense.js";
+import fleetUserAuthRoutes from "./routes/SuperAdmin/Auth/Fleet_User.js";
+import fleetSubAdminRoutes from "./routes/SuperAdmin/Fleetsubadmin.js";
 
 dotenv.config();
 connectDB();
@@ -56,6 +58,9 @@ app.get("/api/private-file", (req, res) => {
 
   res.sendFile(absPath);
 });
+
+app.use("/api/fleet-user", fleetUserAuthRoutes);
+app.use("/api/fleet-sub-admin", fleetSubAdminRoutes);
 
 // Routes
 app.use("/api/business-user", businessUserRoutes);

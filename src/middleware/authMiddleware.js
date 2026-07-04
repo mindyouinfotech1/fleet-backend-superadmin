@@ -1,23 +1,41 @@
-
 import jwt from "jsonwebtoken";
 
-export const authMiddleware = (req, res, next) => {
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Verify JWT — from cookie or Authorization header
+export const verifyToken = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token =
+      req.cookies?.token ||
+      (req.headers.authorization?.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : null);
 
-    // console.log("Received Authorization header:", authHeader); // Debugging log
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Bearer token missing" });
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided, please login",
+      });
     }
 
-    const token = authHeader.split(" ")[1];
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { userId, email, roleId, orgId, isOrgAdmin }
     next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token, please login again",
+    });
   }
+};
+
+// Only the main org admin can pass — used to protect sub-admin creation
+export const isOrgAdmin = (req, res, next) => {
+  if (!req.user?.isOrgAdmin) {
+    return res.status(403).json({
+      success: false,
+      message: "Only the organization admin can perform this action",
+    });
+  }
+  next();
 };

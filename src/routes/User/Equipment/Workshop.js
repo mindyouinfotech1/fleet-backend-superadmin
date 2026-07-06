@@ -11,6 +11,7 @@ const router = express.Router();
 
 router.post("/", createWorkshop);
 router.get("/", getAllWorkshops);
+
 router.get("/:id", getWorkshopById);
 router.put("/:id", updateWorkshop);
 router.delete("/:id", deleteWorkshop);

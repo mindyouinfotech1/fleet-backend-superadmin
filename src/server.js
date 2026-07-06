@@ -23,6 +23,8 @@ import tyreReplacementRoutes from "./routes/User/Equipment/TyreReplacement.js";
 import expenseRoutes from "./routes/User/Equipment/Expense.js";
 import fleetUserAuthRoutes from "./routes/SuperAdmin/Auth/Fleet_User.js";
 import fleetSubAdminRoutes from "./routes/SuperAdmin/Fleetsubadmin.js";
+import emailOtpRoutes from "./routes/SuperAdmin/Email/EmailOtp.js";
+import forgetpassRoutes from "./routes/SuperAdmin/Email/forgetpass.js";
 
 dotenv.config();
 connectDB();
@@ -61,6 +63,9 @@ app.get("/api/private-file", (req, res) => {
 
 app.use("/api/fleet-user", fleetUserAuthRoutes);
 app.use("/api/fleet-sub-admin", fleetSubAdminRoutes);
+//  User Routes
+app.use("/api/email-otp", emailOtpRoutes);
+app.use("/api/auth", forgetpassRoutes);
 
 // Routes
 app.use("/api/business-user", businessUserRoutes);

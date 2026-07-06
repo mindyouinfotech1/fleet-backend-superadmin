@@ -41,7 +41,6 @@ export const createSubAdmin = async (req, res) => {
     } = req.body;
 
     if (!orgId || !name || !email || !password) {
-      
       if (req.file)
         deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
       return res.status(400).json({
@@ -143,25 +142,90 @@ export const createSubAdmin = async (req, res) => {
   }
 };
 
+// ================= UPDATE PASSWORD (BY USER ID) =================
+export const updateUserPassword = async (req, res) => {
+  try {
+    const { userId, oldPassword, newPassword } = req.body;
+
+    if (!userId || !oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "userId, oldPassword and newPassword are required",
+      });
+    }
+
+    // find user
+    const user = await FleetUser.findById(userId);
+
+    if (!user || user.isDelete) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // check old password match
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect",
+      });
+    }
+
+    // check if new password is same as old password
+    const isSame = await bcrypt.compare(newPassword, user.password);
+
+    if (isSame) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be same as old password",
+      });
+    }
+
+    // hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // ================= UPDATE SUB-ADMIN =================
 export const updateSubAdmin = async (req, res) => {
   try {
     const { id } = req.params;
 
     const existing = await FleetUser.findById(id);
+
     if (!existing || existing.isDelete) {
-      if (req.file)
+      if (req.file) {
         deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
+      }
+
       return res.status(404).json({
         success: false,
         message: "Sub-Admin not found",
       });
     }
 
-    // Never allow flipping a sub-admin into the org admin via this route
+    // Prevent editing Org Admin from this endpoint
     if (existing.isOrgAdmin) {
-      if (req.file)
+      if (req.file) {
         deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
+      }
+
       return res.status(403).json({
         success: false,
         message: "Org admin cannot be edited from this endpoint",
@@ -184,20 +248,30 @@ export const updateSubAdmin = async (req, res) => {
       status,
     } = req.body;
 
-    // Validate role if changed
-    if (roleId) {
-      const role = await Role.findOne({ _id: roleId, orgId: existing.orgId });
+    // ================= Validate Role (Only if roleId is provided) =================
+    if (roleId && roleId.trim() !== "") {
+      const role = await Role.findOne({
+        _id: roleId,
+        orgId: existing.orgId,
+      });
+
       if (!role) {
-        if (req.file)
+        if (req.file) {
           deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
+        }
+
         return res.status(400).json({
           success: false,
           message: "Invalid role for this organization",
         });
       }
+
+      // Don't allow assigning system admin role
       if (role.roleName === "admin" && role.isSystemRole) {
-        if (req.file)
+        if (req.file) {
           deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
+        }
+
         return res.status(403).json({
           success: false,
           message: "Cannot assign the main admin role to a sub-admin",
@@ -205,16 +279,20 @@ export const updateSubAdmin = async (req, res) => {
       }
     }
 
-    // Email uniqueness check within org (excluding self)
+    // ================= Email Validation =================
     if (email && email !== existing.email) {
       const emailExist = await FleetUser.findOne({
         orgId: existing.orgId,
         email,
         _id: { $ne: id },
+        isDelete: false,
       });
+
       if (emailExist) {
-        if (req.file)
+        if (req.file) {
           deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
+        }
+
         return res.status(400).json({
           success: false,
           message: "Email already exists in this organization",
@@ -222,43 +300,55 @@ export const updateSubAdmin = async (req, res) => {
       }
     }
 
-    const updateData = {
-      roleId,
-      name,
-      email,
-      address,
-      country,
-      state,
-      city,
-      pincode,
-      gender,
-      dateOfBirth,
-      phone,
-      isActive,
-      status,
-    };
+    // ================= Build Update Data =================
+    const updateData = {};
 
-    // New photo uploaded — replace old one
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (address !== undefined) updateData.address = address;
+    if (country !== undefined) updateData.country = country;
+    if (state !== undefined) updateData.state = state;
+    if (city !== undefined) updateData.city = city;
+    if (pincode !== undefined) updateData.pincode = pincode;
+    if (gender !== undefined) updateData.gender = gender;
+    if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
+    if (phone !== undefined) updateData.phone = phone;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (status !== undefined) updateData.status = status;
+
+    // Update role only if valid roleId is received
+    if (roleId && roleId.trim() !== "") {
+      updateData.roleId = roleId;
+    }
+
+    // ================= Profile Photo =================
     if (req.file) {
-      deletePhotoFile(existing.ProfilePhoto);
+      if (existing.ProfilePhoto) {
+        deletePhotoFile(existing.ProfilePhoto);
+      }
+
       updateData.ProfilePhoto = `${PROFILE_PHOTO_DIR}/${req.file.filename}`;
     }
 
+    // ================= Update =================
     const updated = await FleetUser.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
 
-    const { password: _pw, ...safeUser } = updated.toObject();
+    const { password, ...safeUser } = updated.toObject();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Sub-Admin Updated Successfully",
       data: safeUser,
     });
   } catch (error) {
-    if (req.file) deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
-    res.status(500).json({
+    if (req.file) {
+      deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
+    }
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

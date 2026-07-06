@@ -8,11 +8,11 @@ import { verifyToken, isOrgAdmin } from "../../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Public routes
+
 router.post("/login", login);
 router.post("/logout", logout);
 
-// Protected — only a logged-in ORG ADMIN can create a sub-admin
+
 router.post("/sub-admin/create", verifyToken, isOrgAdmin, createSubAdmin);
 
 export default router;

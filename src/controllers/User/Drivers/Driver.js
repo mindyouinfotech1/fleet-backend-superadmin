@@ -1,38 +1,147 @@
-import { Driver } from "../../../models/User/Drivers/Driver.js";
+// import { Driver } from "../../../models/User/Drivers/Driver.js";
+// import fs from "fs";
+
+// export const createDriver = async (req, res) => {
+//   try {
+//     const {
+//       email,
+//       phoneNumber,
+//       nationalIdOrAadharNumber,
+//       firstName,
+//       lastName,
+//       organizationId,
+//     } = req.body;
+
+//     if (!email || !phoneNumber || !firstName || !lastName || !organizationId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Required fields are missing",
+//       });
+//     }
+
+//     if (req.file) {
+//       req.body.profilePhoto = `/uploads/${req.file.filename}`;
+//     }
+
+//     const driver = await Driver.create(req.body);
+
+//     // SOCKET EVENT
+//     const io = req.app.get("io");
+//     if (io) io.emit("driverCreated", driver);
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Driver created successfully",
+//       data: driver,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: "Error creating driver",
+//       error: error.message,
+//     });
+//   }
+// };
+
+///////////////////////////////////
+
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 import fs from "fs";
+import { Driver } from "../../../models/User/Drivers/Driver.js";
+import { User as BusinessUser } from "../../../models/SuperAdmin/Auth/Bussiness_User.js";
 
 export const createDriver = async (req, res) => {
   try {
     const {
       email,
       phoneNumber,
-      nationalIdOrAadharNumber,
+      password,
       firstName,
       lastName,
       organizationId,
     } = req.body;
 
-    if (!email || !phoneNumber || !firstName || !lastName || !organizationId) {
+    if (
+      !email ||
+      !phoneNumber ||
+      !password ||
+      !firstName ||
+      !lastName ||
+      !organizationId
+    ) {
       return res.status(400).json({
         success: false,
         message: "Required fields are missing",
       });
     }
 
+    // 1. organizationCode BusinessUser se fetch karo
+    const businessUser = await BusinessUser.findById(organizationId);
+    if (!businessUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found",
+      });
+    }
+    const organizationCode = businessUser.organizationCode;
+
+    // 2. Same email + same organization me driver already hai?
+    const alreadyExists = await Driver.findOne({ email, organizationId });
+    if (alreadyExists) {
+      return res.status(409).json({
+        success: false,
+        message: "Driver with this email already exists in this organization",
+      });
+    }
+
+    const lastDriver = await Driver.findOne({ organizationId }).sort({
+      DriverCodeByOrganization: -1,
+    });
+
+    let nextNumber = 1;
+    if (lastDriver?.DriverCodeByOrganization) {
+      const lastNum = parseInt(
+        lastDriver.DriverCodeByOrganization.split("-")[1],
+        10,
+      );
+      if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+    }
+    const DriverCodeByOrganization = `DIR-${String(nextNumber).padStart(6, "0")}`;
+
+    // 4. DriverRelationShip - same email ho to reuse, warna naya generate
+    const existingDriverByEmail = await Driver.findOne({ email });
+    const DriverRelationShip = existingDriverByEmail
+      ? existingDriverByEmail.DriverRelationShip
+      : `REL-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
+
+    // 5. Password hash
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     if (req.file) {
       req.body.profilePhoto = `/uploads/${req.file.filename}`;
     }
 
-    const driver = await Driver.create(req.body);
+    const driver = await Driver.create({
+      ...req.body,
+      organizationCode,
+      DriverCodeByOrganization,
+      DriverRelationShip,
+      password: hashedPassword,
+    });
+
+    const driverObj = driver.toObject();
+    delete driverObj.password;
 
     // SOCKET EVENT
     const io = req.app.get("io");
-    if (io) io.emit("driverCreated", driver);
+    if (io) io.emit("driverCreated", driverObj);
 
     return res.status(201).json({
       success: true,
       message: "Driver created successfully",
-      data: driver,
+      data: driverObj,
     });
   } catch (error) {
     return res.status(500).json({
@@ -43,9 +152,11 @@ export const createDriver = async (req, res) => {
   }
 };
 
+////////////////////////////
+
 export const getAllDrivers = async (req, res) => {
   try {
-    const { organizationId } = req.query; // 👈 query se lo
+    const { organizationId } = req.query;
 
     if (!organizationId) {
       return res.status(400).json({
@@ -54,9 +165,17 @@ export const getAllDrivers = async (req, res) => {
       });
     }
 
-    const drivers = await Driver.find({ organizationId, isDeleted: false })
-      .populate("organizationId")
-      .sort({ createdAt: -1 });
+    if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid organizationId",
+      });
+    }
+
+    const drivers = await Driver.find({
+      organizationId,
+      isDeleted: false,
+    }).select("-password");
 
     return res.status(200).json({
       success: true,

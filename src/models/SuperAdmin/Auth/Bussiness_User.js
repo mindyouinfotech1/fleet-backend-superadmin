@@ -22,26 +22,31 @@ const BusinessUserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    countryId: {
+      type: Number,
+      // required: true,
+    },
+
     country: {
       type: String,
       required: true,
     },
     countryCode: {
-      type: String, // e.g. "IN", "US"
+      type: String,
       required: true,
     },
     currency: {
-      type: String, // e.g. "INR", "USD"
+      type: String,
       required: true,
     },
     currencySymbol: {
-      type: String, // e.g. "₹", "$"
+      type: String,
     },
     flag: {
-      type: String, // flag image URL or emoji code
+      type: String,
     },
     timezone: {
-      type: String, // e.g. "Asia/Kolkata"
+      type: String,
     },
     phone: {
       type: String,

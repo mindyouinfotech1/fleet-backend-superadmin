@@ -7,8 +7,8 @@ import fs from "fs";
 import http from "http";
 import { Server } from "socket.io";
 
-import tenantRoutes from "./routes/SuperAdmin/Auth/Tenant.js";
-import userRoutes from "./routes/SuperAdmin/Auth/Users.js";
+// import tenantRoutes from "./routes/SuperAdmin/Auth/Tenant.js";
+// import userRoutes from "./routes/SuperAdmin/Auth/Users.js";
 import businessUserRoutes from "./routes/SuperAdmin/Auth/Bussiness_User.js";
 import driverRoutes from "./routes/User/Drivers/Driver.js";
 import driverLicenseRoutes from "./routes/User/Drivers/DriverLicense.js";
@@ -77,9 +77,8 @@ app.use("/api/payroll-records", payrollRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/maintenance-due", maintenanceRoutes);
 app.use("/api/workshops", WorkshopRoutes);
-
 app.use("/api/part-replacements", partReplacementRoutes);
-app.use("/api/tenants", tenantRoutes);
+
 app.use("/api/tyre-replacements", tyreReplacementRoutes);
 app.use("/api/expenses", expenseRoutes);
 

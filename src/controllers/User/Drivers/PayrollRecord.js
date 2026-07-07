@@ -8,6 +8,8 @@ export const createPayrollRecord = async (req, res) => {
   try {
     const payload = req.body;
 
+    // console.log(payload);
+
     const record = await PayrollRecord.create(payload);
 
     // ================= SOCKET =================

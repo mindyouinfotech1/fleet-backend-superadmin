@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const payrollRecordSchema = new mongoose.Schema(
   {
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BusinessUser",
+      required: true,
+    },
     driverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Driver",
@@ -9,7 +14,6 @@ const payrollRecordSchema = new mongoose.Schema(
       index: true,
     },
 
- 
     wagesType: {
       type: String,
       required: true,
@@ -36,7 +40,7 @@ const payrollRecordSchema = new mongoose.Schema(
     // INR, USD, EUR, GBP, AED...
     currencyCode: {
       type: String,
-    //   required: true,
+      //   required: true,
       uppercase: true,
       trim: true,
     },
@@ -72,7 +76,7 @@ const payrollRecordSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 payrollRecordSchema.index({ driverId: 1 });
@@ -81,5 +85,5 @@ payrollRecordSchema.index({ wagesType: 1 });
 
 export const PayrollRecord = mongoose.model(
   "PayrollRecord",
-  payrollRecordSchema
+  payrollRecordSchema,
 );

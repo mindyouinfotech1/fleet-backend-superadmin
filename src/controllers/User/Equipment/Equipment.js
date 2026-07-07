@@ -166,25 +166,28 @@ export const createEquipment = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   2) GET ALL EQUIPMENT (with filters + pagination)
-=========================================================== */
 export const getAllEquipment = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      equipmentStatus,
-      fuelType,
-      search,
-      organizationId,
-    } = req.query;
+    const { equipmentStatus, fuelType, search, organizationId } = req.query;
 
     const filter = {};
 
-    if (organizationId) filter.organizationId = organizationId;
-    if (equipmentStatus) filter.equipmentStatus = equipmentStatus;
-    if (fuelType) filter.fuelType = fuelType;
+    // Organization filter
+    if (organizationId) {
+      filter.organizationId = organizationId;
+    }
+
+    // Status filter
+    if (equipmentStatus) {
+      filter.equipmentStatus = equipmentStatus;
+    }
+
+    // Fuel filter
+    if (fuelType) {
+      filter.fuelType = fuelType;
+    }
+
+    // Search filter
     if (search) {
       filter.$or = [
         { equipmentName: { $regex: search, $options: "i" } },
@@ -194,26 +197,21 @@ export const getAllEquipment = async (req, res) => {
       ];
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const total = await Equipment.countDocuments(filter);
-
     const equipments = await Equipment.find(filter)
       .populate("ownership.primaryDriver", "firstName lastName phoneNumber")
       .populate("verifiedBy", "name email")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / parseInt(limit)),
       count: equipments.length,
       data: equipments,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

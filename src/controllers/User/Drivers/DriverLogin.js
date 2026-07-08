@@ -30,10 +30,26 @@ export const driverLogin = async (req, res) => {
       email,
       organizationId: businessUser._id,
     });
+
     if (!driver) {
       return res.status(404).json({
         success: false,
         message: "Driver not found in this organization",
+      });
+    }
+
+    //  Driver status check (NEW)
+    if (driver.driverStatus !== "Active") {
+      return res.status(403).json({
+        success: false,
+        message: "Driver is not active in this organization",
+      });
+    }
+
+    if (driver.isDeleted !== false) {
+      return res.status(403).json({
+        success: false,
+        message: "Driver is not found in this organization",
       });
     }
 

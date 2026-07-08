@@ -1,50 +1,3 @@
-// import { Driver } from "../../../models/User/Drivers/Driver.js";
-// import fs from "fs";
-
-// export const createDriver = async (req, res) => {
-//   try {
-//     const {
-//       email,
-//       phoneNumber,
-//       nationalIdOrAadharNumber,
-//       firstName,
-//       lastName,
-//       organizationId,
-//     } = req.body;
-
-//     if (!email || !phoneNumber || !firstName || !lastName || !organizationId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Required fields are missing",
-//       });
-//     }
-
-//     if (req.file) {
-//       req.body.profilePhoto = `/uploads/${req.file.filename}`;
-//     }
-
-//     const driver = await Driver.create(req.body);
-
-//     // SOCKET EVENT
-//     const io = req.app.get("io");
-//     if (io) io.emit("driverCreated", driver);
-
-//     return res.status(201).json({
-//       success: true,
-//       message: "Driver created successfully",
-//       data: driver,
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: "Error creating driver",
-//       error: error.message,
-//     });
-//   }
-// };
-
-///////////////////////////////////
-
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -144,15 +97,115 @@ export const createDriver = async (req, res) => {
       data: driverObj,
     });
   } catch (error) {
+    // catch (error) {
+    //   return res.status(500).json({
+    //     success: false,
+    //     message: "Error creating driver",
+    //     error: error.message,
+    //   });
+    // }
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        code: "DUPLICATE_EMAIL",
+        message:
+          "This email is already registered with another driver in your organization. Please use a different email address.",
+      });
+    }
+
+    console.error(error);
+
     return res.status(500).json({
       success: false,
-      message: "Error creating driver",
-      error: error.message,
+      message: "Something went wrong while creating the driver.",
     });
   }
 };
 
-////////////////////////////
+
+export const updateDriver = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existingDriver = await Driver.findById(id);
+
+    if (!existingDriver) {
+      return res.status(404).json({
+        success: false,
+        message: "Driver not found",
+      });
+    }
+
+    // Check if another driver already uses this email in the same organization
+    if (req.body.email) {
+      const duplicateDriver = await Driver.findOne({
+        organizationId: existingDriver.organizationId,
+        email: req.body.email,
+        _id: { $ne: id }, // current driver ko ignore karo
+      });
+
+      if (duplicateDriver) {
+        return res.status(409).json({
+          success: false,
+          code: "DUPLICATE_EMAIL",
+          message:
+            "This email is already registered with another driver in your organization. Please use a different email address.",
+        });
+      }
+    }
+
+    // Handle profile photo update
+    if (req.file) {
+      if (existingDriver.profilePhoto) {
+        const oldPath = `.${existingDriver.profilePhoto}`;
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      req.body.profilePhoto = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedDriver = await Driver.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    // SOCKET EVENT
+    const io = req.app.get("io");
+    if (io) io.emit("driverUpdated", updatedDriver);
+
+    return res.status(200).json({
+      success: true,
+      message: "Driver updated successfully",
+      data: updatedDriver,
+    });
+  } catch (error) {
+    // catch (error) {
+    //   return res.status(500).json({
+    //     success: false,
+    //     message: "Error updating driver",
+    //     error: error.message,
+    //   });
+    // }
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        code: "DUPLICATE_EMAIL",
+        message:
+          "This email is already registered with another driver in your organization. Please use a different email address.",
+      });
+    }
+
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while creating the driver.",
+    });
+  }
+};
 
 export const getAllDrivers = async (req, res) => {
   try {
@@ -217,53 +270,6 @@ export const getDriverById = async (req, res) => {
   }
 };
 
-export const updateDriver = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const existingDriver = await Driver.findById(id);
-
-    if (!existingDriver) {
-      return res.status(404).json({
-        success: false,
-        message: "Driver not found",
-      });
-    }
-
-    // Handle profile photo update
-    if (req.file) {
-      if (existingDriver.profilePhoto) {
-        const oldPath = `.${existingDriver.profilePhoto}`;
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-      req.body.profilePhoto = `/uploads/${req.file.filename}`;
-    }
-
-    const updatedDriver = await Driver.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    // SOCKET EVENT
-    const io = req.app.get("io");
-    if (io) io.emit("driverUpdated", updatedDriver);
-
-    return res.status(200).json({
-      success: true,
-      message: "Driver updated successfully",
-      data: updatedDriver,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Error updating driver",
-      error: error.message,
-    });
-  }
-};
-
 export const deleteDriver = async (req, res) => {
   try {
     const { id } = req.params;
@@ -285,7 +291,7 @@ export const deleteDriver = async (req, res) => {
       }
     }
 
-    // ✅ SOFT DELETE
+    //  SOFT DELETE
     driver.isDeleted = true;
     await driver.save();
 

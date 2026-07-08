@@ -8,8 +8,6 @@ export const createPayrollRecord = async (req, res) => {
   try {
     const payload = req.body;
 
-    // console.log(payload);
-
     const record = await PayrollRecord.create(payload);
 
     // ================= SOCKET =================
@@ -32,12 +30,58 @@ export const createPayrollRecord = async (req, res) => {
 /**
  * GET ALL Payroll Records
  */
+// export const getAllPayrollRecords = async (req, res) => {
+//   try {
+//     const { driverId, status, wagesType, page = 1, limit = 10 } = req.query;
+
+//     const query = { isDeleted: false };
+
+//     if (driverId) query.driverId = driverId;
+//     if (status) query.status = status;
+//     if (wagesType) query.wagesType = wagesType;
+
+//     const skip = (Number(page) - 1) * Number(limit);
+
+//     const [data, total] = await Promise.all([
+//       PayrollRecord.find(query)
+//         .populate("driverId")
+//         .sort({ createdAt: -1 })
+//         .skip(skip)
+//         .limit(Number(limit)),
+//       PayrollRecord.countDocuments(query),
+//     ]);
+
+//     return res.status(200).json({
+//       success: true,
+//       total,
+//       page: Number(page),
+//       pages: Math.ceil(total / limit),
+//       data,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const getAllPayrollRecords = async (req, res) => {
   try {
-    const { driverId, status, wagesType, page = 1, limit = 10 } = req.query;
+    const {
+      organizationId,
+      driverId,
+      status,
+      wagesType,
+      page = 1,
+      limit = 10,
+    } = req.query;
 
-    const query = { isDeleted: false };
+    const query = {
+      isDeleted: false,
+    };
 
+    if (organizationId) query.organizationId = organizationId;
     if (driverId) query.driverId = driverId;
     if (status) query.status = status;
     if (wagesType) query.wagesType = wagesType;
@@ -57,7 +101,7 @@ export const getAllPayrollRecords = async (req, res) => {
       success: true,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit),
+      pages: Math.ceil(total / Number(limit)),
       data,
     });
   } catch (error) {

@@ -8,6 +8,27 @@ const driverLicenseSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BusinessUser",
+    },
+
+    organizationCode: {
+      type: String,
+    },
+
+    DriverCodeByOrganization: {
+      type: String,
+    },
+
+    DriverRelationShip: {
+      type: String,
+    },
+
+    DriverLicensesCode: {
+      type: String,
+      // unique: true,
+    },
 
     licenseNumber: {
       type: String,

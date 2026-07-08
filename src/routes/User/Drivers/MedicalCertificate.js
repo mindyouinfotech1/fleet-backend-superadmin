@@ -21,13 +21,12 @@ const upload = createUploader({
   allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],
 });
 
-
 router.post(
   "/create",
   upload.array("certificatefile", 5),
   createMedicalCertificate,
 );
-router.get("/all", getMedicalCertificates);
+router.get("/", getMedicalCertificates);
 router.get("/driver/:driverId", getMedicalCertificatesByDriver);
 router.get("/:id", getMedicalCertificateById);
 

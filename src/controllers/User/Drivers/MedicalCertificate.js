@@ -1,4 +1,5 @@
 import { MedicalCertificate } from "../../../models/User/Drivers/MedicalCertificate.js";
+import { Driver } from "../../../models/User/Drivers/Driver.js";
 
 // ================= CREATE MEDICAL CERTIFICATE =================
 
@@ -18,6 +19,11 @@ export const createMedicalCertificate = async (req, res) => {
       remarks,
     } = req.body;
 
+    // Driver details fetch
+    const driver = await Driver.findById(driverId).select(
+      "organizationId organizationCode DriverCodeByOrganization DriverRelationShip",
+    );
+
     let certificateUpload = [];
 
     if (req.files && req.files.length > 0) {
@@ -27,8 +33,32 @@ export const createMedicalCertificate = async (req, res) => {
       }));
     }
 
+    const lastMedicalCertificate = await MedicalCertificate.findOne()
+      .sort({ createdAt: -1 })
+      .select(" DriverMedicalCertificateCode");
+
+    let DriverMedicalCertificateCode = "DMC-000001";
+
+    if (lastMedicalCertificate?.DriverMedicalCertificateCode) {
+      const lastNumber = parseInt(
+        lastMedicalCertificate.DriverMedicalCertificateCode.split("-")[1],
+      );
+
+      DriverMedicalCertificateCode = `DMC-${String(lastNumber + 1).padStart(6, "0")}`;
+    }
+
     const certificate = await MedicalCertificate.create({
       driverId,
+
+      // Driver Collection se aane wale fields
+      organizationId: driver.organizationId,
+      organizationCode: driver.organizationCode,
+      DriverCodeByOrganization: driver.DriverCodeByOrganization,
+      DriverRelationShip: driver.DriverRelationShip,
+
+      // Driver License Code
+      DriverMedicalCertificateCode,
+
       certificateNumber,
       countryCode,
       issuingAuthority,
@@ -66,11 +96,41 @@ export const createMedicalCertificate = async (req, res) => {
 
 // ================= GET ALL CERTIFICATES =================
 
+// export const getMedicalCertificates = async (req, res) => {
+//   try {
+//     const certificates = await MedicalCertificate.find({
+//       isDeleted: false,
+//     })
+//       .populate("driverId")
+//       .populate("verifiedBy")
+//       .sort({ createdAt: -1 });
+
+//     return res.json({
+//       success: true,
+//       count: certificates.length,
+//       data: certificates,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const getMedicalCertificates = async (req, res) => {
   try {
-    const certificates = await MedicalCertificate.find({
+    const { organizationId } = req.query;
+
+    const filter = {
       isDeleted: false,
-    })
+    };
+
+    if (organizationId) {
+      filter.organizationId = organizationId;
+    }
+
+    const certificates = await MedicalCertificate.find(filter)
       .populate("driverId")
       .populate("verifiedBy")
       .sort({ createdAt: -1 });

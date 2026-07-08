@@ -50,7 +50,6 @@ export const getAllMaintenance = async (req, res) => {
     const data = await Maintenance.find(filter)
       .populate("organizationId")
       .populate("equipment")
-      .populate("verifiedBy")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({

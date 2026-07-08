@@ -1,4 +1,5 @@
 import { DriverLicense } from "../../../models/User/Drivers/DriverLicense.js";
+import { Driver } from "../../../models/User/Drivers/Driver.js";
 import mongoose from "mongoose";
 
 /* =========================
@@ -20,6 +21,18 @@ export const createDriverLicense = async (req, res) => {
       remarks,
     } = req.body;
 
+    // Driver details fetch
+    const driver = await Driver.findById(driverId).select(
+      "organizationId organizationCode DriverCodeByOrganization DriverRelationShip",
+    );
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: "Driver not found",
+      });
+    }
+
     const licenseFront = req.files?.licenseFront?.[0]?.path;
     const licenseBack = req.files?.licenseBack?.[0]?.path;
 
@@ -30,8 +43,49 @@ export const createDriverLicense = async (req, res) => {
       });
     }
 
+    const lastLicense = await DriverLicense.findOne()
+      .sort({ createdAt: -1 })
+      .select("DriverLicensesCode");
+
+    let DriverLicensesCode = "DLC-000001";
+
+    if (lastLicense?.DriverLicensesCode) {
+      const lastNumber = parseInt(lastLicense.DriverLicensesCode.split("-")[1]);
+
+      DriverLicensesCode = `DLC-${String(lastNumber + 1).padStart(6, "0")}`;
+    }
+
+    // const license = await DriverLicense.create({
+    //   driverId,
+    //   licenseNumber,
+    //   countryCode,
+    //   licenseType,
+    //   licenseClass,
+    //   endorsements,
+    //   restrictions,
+    //   issueDate,
+    //   expiryDate,
+    //   issuingAuthority,
+    //   remarks,
+    //   licenseFront,
+    //   licenseBack,
+    // });
+
+    // SOCKET EVENT
+
     const license = await DriverLicense.create({
       driverId,
+
+      // Driver Collection se aane wale fields
+      organizationId: driver.organizationId,
+      organizationCode: driver.organizationCode,
+      DriverCodeByOrganization: driver.DriverCodeByOrganization,
+      DriverRelationShip: driver.DriverRelationShip,
+
+      // Driver License Code
+      DriverLicensesCode,
+
+      // Existing Fields
       licenseNumber,
       countryCode,
       licenseType,
@@ -46,7 +100,6 @@ export const createDriverLicense = async (req, res) => {
       licenseBack,
     });
 
-    // SOCKET EVENT
     const io = req.app.get("io");
     if (io) io.emit("driverLicenseCreated", license);
 
@@ -63,14 +116,17 @@ export const createDriverLicense = async (req, res) => {
   }
 };
 
-/* =========================
-   GET ALL LICENSES
-========================= */
+// /* =========================
+//    GET ALL LICENSES
+// ========================= */
 export const getAllDriverLicenses = async (req, res) => {
   try {
-    const { driverId, countryCode, status } = req.query;
+    const { driverId, countryCode, status, organizationId } = req.query;
 
-    const filter = { isDeleted: false };
+    const filter = {
+      isDeleted: false,
+      organizationId: organizationId,
+    };
 
     if (driverId) filter.driverId = driverId;
     if (countryCode) filter.countryCode = countryCode;
@@ -93,6 +149,87 @@ export const getAllDriverLicenses = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   GET ALL LICENSES
+========================= */
+// export const getAllDriverLicenses = async (req, res) => {
+//   try {
+//     const { driverId, organizationId, countryCode, status } = req.query;
+
+//     const filter = {
+//       isDeleted: false,
+//     };
+
+//     if (driverId) filter.driverId = driverId;
+//     if (organizationId) filter.organizationId = organizationId;
+//     if (countryCode) filter.countryCode = countryCode;
+//     if (status) filter.status = status;
+
+//     const licenses = await DriverLicense.find(filter)
+//       .populate("driverId")
+//       .populate("verifiedBy", "name email")
+//       .sort({ createdAt: -1 });
+
+//     // Group by Driver
+//     const groupedDrivers = {};
+
+//     licenses.forEach((license) => {
+//       const driver = license.driverId;
+
+//       if (!driver) return;
+
+//       const driverKey = driver._id.toString();
+
+//       if (!groupedDrivers[driverKey]) {
+//         groupedDrivers[driverKey] = {
+//           driver: driver,
+//           totalLicenses: 0,
+//           licenses: [],
+//         };
+//       }
+
+//       groupedDrivers[driverKey].totalLicenses++;
+
+//       groupedDrivers[driverKey].licenses.push({
+//         _id: license._id,
+//         DriverLicensesCode: license.DriverLicensesCode,
+//         licenseNumber: license.licenseNumber,
+//         countryCode: license.countryCode,
+//         licenseType: license.licenseType,
+//         licenseClass: license.licenseClass,
+//         endorsements: license.endorsements,
+//         restrictions: license.restrictions,
+//         issueDate: license.issueDate,
+//         expiryDate: license.expiryDate,
+//         issuingAuthority: license.issuingAuthority,
+
+//         status: license.status,
+//         verified: license.verified,
+//         isExpired: license.isExpired,
+//         isDeleted: license.isDeleted,
+
+//         licenseFront: license.licenseFront,
+//         licenseBack: license.licenseBack,
+
+//         createdAt: license.createdAt,
+//         updatedAt: license.updatedAt,
+//       });
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       totalDrivers: Object.keys(groupedDrivers).length,
+//       totalLicenses: licenses.length,
+//       data: Object.values(groupedDrivers),
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
 
 /* =========================
    GET SINGLE LICENSE

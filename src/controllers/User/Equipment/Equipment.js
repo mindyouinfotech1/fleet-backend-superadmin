@@ -1,7 +1,7 @@
 import { Equipment } from "../../../models/User/Equipment/Equipment.js";
 import fs from "fs";
 import path from "path";
-
+import mongoose from "mongoose";
 /* ===========================================================
    HELPER: evaluateEligibility (common pattern)
 =========================================================== */
@@ -174,7 +174,14 @@ export const getAllEquipment = async (req, res) => {
 
     // Organization filter
     if (organizationId) {
-      filter.organizationId = organizationId;
+      if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid organizationId",
+        });
+      }
+
+      filter.organizationId = new mongoose.Types.ObjectId(organizationId);
     }
 
     // Status filter
@@ -197,18 +204,15 @@ export const getAllEquipment = async (req, res) => {
       ];
     }
 
-    const equipments = await Equipment.find(filter)
-      .populate("ownership.primaryDriver", "firstName lastName phoneNumber")
-      .populate("verifiedBy", "name email")
-      .sort({ createdAt: -1 });
+    const equipments = await Equipment.find(filter).sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: equipments.length,
       data: equipments,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

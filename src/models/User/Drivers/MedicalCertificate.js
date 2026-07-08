@@ -9,6 +9,28 @@ const medicalCertificateSchema = new mongoose.Schema(
       index: true,
     },
 
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BusinessUser",
+    },
+
+    organizationCode: {
+      type: String,
+    },
+
+    DriverCodeByOrganization: {
+      type: String,
+    },
+
+    DriverRelationShip: {
+      type: String,
+    },
+
+    DriverMedicalCertificateCode: {
+      type: String,
+      // unique: true,
+    },
+
     certificateNumber: {
       type: String,
       required: true,
@@ -92,7 +114,6 @@ const medicalCertificateSchema = new mongoose.Schema(
       default: false,
     },
 
-  
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
       // ref: "Admin",

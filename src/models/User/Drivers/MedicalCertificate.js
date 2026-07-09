@@ -98,14 +98,14 @@ const medicalCertificateSchema = new mongoose.Schema(
     // ===== Workflow Block =====
     status: {
       type: String,
-      enum: [
-        "pending",
-        "in_progress",
-        "approved",
-        "rejected",
-        "completed",
-        "cancelled",
-      ],
+      // enum: [
+      //   "pending",
+      //   "in_progress",
+      //   "approved",
+      //   "rejected",
+      //   "completed",
+      //   "cancelled",
+      // ],
       default: "pending",
     },
 

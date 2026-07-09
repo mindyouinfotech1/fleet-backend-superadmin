@@ -1,36 +1,22 @@
-// controllers/driverStatusController.js
-// -----------------------------------------------------------------------------
-// Ye controller Driver, DriverLicense aur MedicalCertificate teeno collections ko
-// driverId ke basis pe cross-check karta hai, current date vs expiryDate check
-// karke DB me statuses/flags update karta hai, aur ek detailed report return karta hai:
-//   1) Kis organization me kis driver ka kya status hai
-//   2) Kis kis driver ka license expire ho chuka hai
-//   3) Kis kis driver ka medical certificate valid hai
-//   4) Kis driver ke profile me required info missing hai
-// -----------------------------------------------------------------------------
-
 import mongoose from "mongoose";
 import { Driver } from ".././../../models/User/Drivers/Driver.js";
 import { DriverLicense } from ".././../../models/User/Drivers/DriverLicense.js";
 import { MedicalCertificate } from ".././../../models/User/Drivers/MedicalCertificate.js";
 
-// -----------------------------------------------------------------------------
-// CONFIG: Driver profile ke required fields (business rule ke hisab se adjust karo)
-// -----------------------------------------------------------------------------
 const REQUIRED_DRIVER_FIELDS = [
   "firstName",
   "lastName",
   "dateOfBirth",
   "email",
-  "phoneNumber",
-  "nationalIdOrAadharNumber",
-  "dateOfJoining",
-  "employmentType",
-  "address",
-  "pinCode",
+  // "phoneNumber",
+  // "nationalIdOrAadharNumber",
+  // "dateOfJoining",
+  // "employmentType",
+  // "address",
+  // "pinCode",
   "countryId",
-  "stateId",
-  "cityId",
+  // "stateId",
+  // "cityId",
 ];
 
 const REQUIRED_LICENSE_FIELDS = [
@@ -55,6 +41,7 @@ const REQUIRED_MEDICAL_FIELDS = [
 // -----------------------------------------------------------------------------
 // Helper: check missing required fields on a document
 // -----------------------------------------------------------------------------
+
 function findMissingFields(doc, requiredFields) {
   if (!doc) return requiredFields; // pura document hi missing hai
   return requiredFields.filter((field) => {
@@ -107,11 +94,6 @@ function evaluateMedicalCertificate(cert, now) {
   return { exists: true, isExpired, isValid, missingFields, isVerified };
 }
 
-// -----------------------------------------------------------------------------
-// MAIN CONTROLLER: syncAllDriverStatuses
-// Route example: POST /api/drivers/sync-status  (protect this route - admin only)
-// Can also be called directly from a cron job (see bottom of file).
-// -----------------------------------------------------------------------------
 export const syncAllDriverStatuses = async (req, res) => {
   const now = new Date();
 
@@ -283,10 +265,23 @@ export const syncAllDriverStatuses = async (req, res) => {
   }
 };
 
-// -----------------------------------------------------------------------------
-// OPTIONAL: single driver status sync (use karo jab ek hi driver update karna ho,
-// e.g. license/medical cert upload hone ke baad turant status refresh karna)
-// -----------------------------------------------------------------------------
+const EXPIRY_WARNING_DAYS = 7;
+
+function getExpiryMeta(expiryDate, now) {
+  if (!expiryDate) {
+    return { isExpiringSoon: false, expiresInDays: null };
+  }
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diffDays = Math.ceil((new Date(expiryDate) - now) / msPerDay);
+
+  return {
+    // abhi expire nahi hua, aur warning window (7 din) ke andar hai
+    isExpiringSoon: diffDays >= 0 && diffDays <= EXPIRY_WARNING_DAYS,
+    expiresInDays: diffDays, // negative matlab already expired ho chuka
+  };
+}
+
 export const syncSingleDriverStatus = async (req, res) => {
   const { driverId } = req.params;
   const now = new Date();
@@ -322,10 +317,19 @@ export const syncSingleDriverStatus = async (req, res) => {
       REQUIRED_DRIVER_FIELDS,
     );
 
+    //  NAYA: expiry-soon meta nikalo (license/medicalCert ke expiryDate field se)
+    const licenseExpiryMeta = getExpiryMeta(license?.expiryDate, now);
+    const medicalExpiryMeta = getExpiryMeta(medicalCert?.expiryDate, now);
+
+    //  NAYA: evaluateLicense/evaluateMedicalCertificate ke result me merge karo
+    const licenseEvalWithExpiry = { ...licenseEval, ...licenseExpiryMeta };
+    const medicalEvalWithExpiry = { ...medicalEval, ...medicalExpiryMeta };
+
     if (license) {
       license.flags = license.flags || {};
       license.flags.isExpired = licenseEval.isExpired;
       license.flags.isEligible = licenseEval.isValid;
+      license.flags.isExpiringSoon = licenseExpiryMeta.isExpiringSoon; //  NAYA
       license.status = licenseEval.isExpired ? "Expired" : license.status;
       await license.save();
     }
@@ -333,6 +337,7 @@ export const syncSingleDriverStatus = async (req, res) => {
     if (medicalCert) {
       medicalCert.flags = medicalCert.flags || {};
       medicalCert.flags.isEligible = medicalEval.isValid;
+      medicalCert.flags.isExpiringSoon = medicalExpiryMeta.isExpiringSoon; //  NAYA
       medicalCert.status = medicalEval.isExpired
         ? "expired"
         : medicalCert.status;
@@ -344,8 +349,13 @@ export const syncSingleDriverStatus = async (req, res) => {
       medicalEval.isValid &&
       driverMissingFields.length === 0;
 
+    //  NAYA: overall driver-level expiring-soon flag
+    const isExpiringSoon =
+      licenseExpiryMeta.isExpiringSoon || medicalExpiryMeta.isExpiringSoon;
+
     driver.flags = driver.flags || {};
     driver.flags.isEligible = isDriverEligible;
+    driver.flags.isExpiringSoon = isExpiringSoon; //  NAYA
     if (driver.driverStatus !== "Rejected") {
       driver.driverStatus = isDriverEligible ? "Active" : "Inactive";
     }
@@ -358,9 +368,10 @@ export const syncSingleDriverStatus = async (req, res) => {
         driverId: driver._id,
         driverStatus: driver.driverStatus,
         isEligible: isDriverEligible,
-        license: licenseEval,
-        medicalCertificate: medicalEval,
-        missingDriverFields,
+        isExpiringSoon, //  NAYA: overall flag (license ya medical, dono me se koi bhi expiring soon ho)
+        license: licenseEvalWithExpiry, //  ab isme isExpiringSoon + expiresInDays bhi honge
+        medicalCertificate: medicalEvalWithExpiry, //  same yahan bhi
+        missingDriverFields: driverMissingFields,
       },
     });
   } catch (error) {

@@ -1,6 +1,24 @@
 import { MedicalCertificate } from "../../../models/User/Drivers/MedicalCertificate.js";
 import { Driver } from "../../../models/User/Drivers/Driver.js";
 
+const EXPIRY_WARNING_DAYS = 7;
+
+function calculateCertificateStatus(expiryDate) {
+  if (!expiryDate) return "pending";
+
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+
+  if (expiry < now) return "expired";
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysLeft = Math.ceil((expiry - now) / msPerDay);
+
+  if (daysLeft <= EXPIRY_WARNING_DAYS) return "expiringsoon";
+
+  return "active";
+}
+
 // ================= CREATE MEDICAL CERTIFICATE =================
 
 export const createMedicalCertificate = async (req, res) => {
@@ -72,8 +90,11 @@ export const createMedicalCertificate = async (req, res) => {
         typeof restrictions === "string"
           ? restrictions.split(",")
           : restrictions,
+      // remarks,
+      // status: "pending",
+      // isVerified: false,
       remarks,
-      status: "pending",
+      status: calculateCertificateStatus(expiryDate),
       isVerified: false,
     });
 
@@ -94,29 +115,48 @@ export const createMedicalCertificate = async (req, res) => {
   }
 };
 
+// ================= UPDATE =================
+
+export const updateMedicalCertificate = async (req, res) => {
+  try {
+    const updateData = { ...req.body };
+
+    if (req.files && req.files.length > 0) {
+      updateData.certificateUpload = req.files.map((file) => ({
+        certificatename: file.originalname,
+        certificatefile: `/uploads/${file.filename}`,
+      }));
+    }
+
+    //  NAYA: expiryDate diya gaya ho to naya status calculate karo
+    if (updateData.expiryDate) {
+      updateData.status = calculateCertificateStatus(updateData.expiryDate);
+    }
+
+    const certificate = await MedicalCertificate.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true },
+    );
+
+    //  SOCKET EVENT
+    const io = req.app.get("io");
+    if (io) io.emit("medicalCertificateUpdated", certificate);
+
+    return res.json({
+      success: true,
+      message: "Updated successfully",
+      data: certificate,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // ================= GET ALL CERTIFICATES =================
-
-// export const getMedicalCertificates = async (req, res) => {
-//   try {
-//     const certificates = await MedicalCertificate.find({
-//       isDeleted: false,
-//     })
-//       .populate("driverId")
-//       .populate("verifiedBy")
-//       .sort({ createdAt: -1 });
-
-//     return res.json({
-//       success: true,
-//       count: certificates.length,
-//       data: certificates,
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
 
 export const getMedicalCertificates = async (req, res) => {
   try {
@@ -195,49 +235,6 @@ export const getMedicalCertificateById = async (req, res) => {
 
     return res.json({
       success: true,
-      data: certificate,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// ================= UPDATE =================
-
-export const updateMedicalCertificate = async (req, res) => {
-  try {
-    const updateData = { ...req.body };
-
-    if (req.files && req.files.length > 0) {
-      updateData.certificateUpload = req.files.map((file) => ({
-        certificatename: file.originalname,
-        certificatefile: `/uploads/${file.filename}`,
-      }));
-    }
-
-    const certificate = await MedicalCertificate.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true },
-    );
-
-    if (!certificate) {
-      return res.status(404).json({
-        success: false,
-        message: "Certificate not found",
-      });
-    }
-
-    //  SOCKET EVENT
-    const io = req.app.get("io");
-    if (io) io.emit("medicalCertificateUpdated", certificate);
-
-    return res.json({
-      success: true,
-      message: "Updated successfully",
       data: certificate,
     });
   } catch (error) {

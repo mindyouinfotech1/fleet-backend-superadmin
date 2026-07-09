@@ -48,7 +48,7 @@ const driverLicenseSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["Active", "Expired", "Suspended", "Revoked"],
-      default: "Active",
+      default: null,
     },
 
     licenseFront: { type: String },

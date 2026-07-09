@@ -68,7 +68,7 @@ app.use("/api/email-otp", emailOtpRoutes);
 app.use("/api/auth", forgetpassRoutes);
 
 
-app.use("/api/drivers", driverStatusRoutes);
+app.use("/api/driver-status", driverStatusRoutes);
 
 // Routes
 app.use("/api/business-user", businessUserRoutes);

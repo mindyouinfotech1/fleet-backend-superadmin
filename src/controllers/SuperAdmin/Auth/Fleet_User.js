@@ -5,7 +5,6 @@ import { User as FleetUser } from "../../../models/SuperAdmin/Orgainization/User
 import { User as BusinessUser } from "../../../models/SuperAdmin/Auth/Bussiness_User.js";
 import { Role } from "../../../models/SuperAdmin/Orgainization/Role.js";
 
-
 export const createSubAdmin = async (req, res) => {
   try {
     const {
@@ -109,7 +108,6 @@ export const createSubAdmin = async (req, res) => {
   }
 };
 
-
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -163,7 +161,9 @@ export const login = async (req, res) => {
     }
 
     if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET is missing — check your .env file and dotenv.config() order");
+      console.error(
+        "JWT_SECRET is missing — check your .env file and dotenv.config() order",
+      );
       return res.status(500).json({
         success: false,
         message: "Server misconfiguration: JWT secret not set",
@@ -209,7 +209,6 @@ export const login = async (req, res) => {
     });
   }
 };
-
 
 export const logout = async (req, res) => {
   try {

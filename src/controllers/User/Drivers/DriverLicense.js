@@ -1,7 +1,24 @@
 import { DriverLicense } from "../../../models/User/Drivers/DriverLicense.js";
 import { Driver } from "../../../models/User/Drivers/Driver.js";
 import mongoose from "mongoose";
+const EXPIRY_WARNING_DAYS = 7; //  NAYA: kitne din pehle warning chahiye
 
+function calculateLicenseStatus(expiryDate) {
+  if (!expiryDate) return "Active"; // ya "Pending" jo bhi default chahiye
+
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+
+  if (expiry < now) return "Expired";
+
+  //  NAYA: expiry aur aaj ke beech kitne din bache hain
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysLeft = Math.ceil((expiry - now) / msPerDay);
+
+  if (daysLeft <= EXPIRY_WARNING_DAYS) return "ExpiringSoon"; //  NAYA
+
+  return "Active";
+}
 /* =========================
    CREATE DRIVER LICENSE
 ========================= */
@@ -55,23 +72,7 @@ export const createDriverLicense = async (req, res) => {
       DriverLicensesCode = `DLC-${String(lastNumber + 1).padStart(6, "0")}`;
     }
 
-    // const license = await DriverLicense.create({
-    //   driverId,
-    //   licenseNumber,
-    //   countryCode,
-    //   licenseType,
-    //   licenseClass,
-    //   endorsements,
-    //   restrictions,
-    //   issueDate,
-    //   expiryDate,
-    //   issuingAuthority,
-    //   remarks,
-    //   licenseFront,
-    //   licenseBack,
-    // });
-
-    // SOCKET EVENT
+    const status = calculateLicenseStatus(expiryDate);
 
     const license = await DriverLicense.create({
       driverId,
@@ -98,6 +99,7 @@ export const createDriverLicense = async (req, res) => {
       remarks,
       licenseFront,
       licenseBack,
+      status,
     });
 
     const io = req.app.get("io");
@@ -107,6 +109,75 @@ export const createDriverLicense = async (req, res) => {
       success: true,
       message: "Driver license created successfully",
       data: license,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   UPDATE LICENSE
+========================= */
+
+// export const updateDriverLicense = async (req, res) => {
+//   try {
+//     const updateData = { ...req.body };
+
+//     if (req.files?.licenseFront?.[0]) {
+//       updateData.licenseFront = req.files.licenseFront[0].path;
+//     }
+
+//     if (req.files?.licenseBack?.[0]) {
+//       updateData.licenseBack = req.files.licenseBack[0].path;
+//     }
+
+//     const updated = await DriverLicense.findOneAndUpdate(
+//       { _id: req.params.id, isDeleted: false },
+//       updateData,
+//       { new: true },
+//     );
+
+//     if (!updated) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Driver license not found",
+//       });
+//     }
+
+export const updateDriverLicense = async (req, res) => {
+  try {
+    const updateData = { ...req.body };
+
+    if (req.files?.licenseFront?.[0]) {
+      updateData.licenseFront = req.files.licenseFront[0].path;
+    }
+
+    if (req.files?.licenseBack?.[0]) {
+      updateData.licenseBack = req.files.licenseBack[0].path;
+    }
+
+    //  NAYA: expiryDate diya gaya ho to naya status calculate karo
+    if (updateData.expiryDate) {
+      updateData.status = calculateLicenseStatus(updateData.expiryDate);
+    }
+
+    const updated = await DriverLicense.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: false },
+      updateData,
+      { new: true },
+    );
+
+    // SOCKET EVENT
+    const io = req.app.get("io");
+    if (io) io.emit("driverLicenseUpdated", updated);
+
+    return res.status(200).json({
+      success: true,
+      message: "Driver license updated successfully",
+      data: updated,
     });
   } catch (error) {
     return res.status(500).json({
@@ -264,17 +335,29 @@ export const getDriverLicenseById = async (req, res) => {
 
 export const getAllDriverLicensesByDriver = async (req, res) => {
   try {
-    const { driverId, countryCode, status } = req.query;
+    const { driverId } = req.params;
+    const { countryCode, status } = req.query;
 
-    const filter = { isDeleted: false };
+    const filter = {
+      isDeleted: false,
+      driverId: driverId,
+    };
 
-    //  SAFE driverId check
-    if (driverId && mongoose.Types.ObjectId.isValid(driverId)) {
-      filter.driverId = driverId;
+    // Validate driverId
+    if (!mongoose.Types.ObjectId.isValid(driverId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid driverId",
+      });
     }
 
-    if (countryCode) filter.countryCode = countryCode;
-    if (status) filter.status = status;
+    if (countryCode) {
+      filter.countryCode = countryCode;
+    }
+
+    if (status) {
+      filter.status = status;
+    }
 
     const licenses = await DriverLicense.find(filter)
       .populate("driverId")
@@ -285,51 +368,6 @@ export const getAllDriverLicensesByDriver = async (req, res) => {
       success: true,
       count: licenses.length,
       data: licenses,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-/* =========================
-   UPDATE LICENSE
-========================= */
-export const updateDriverLicense = async (req, res) => {
-  try {
-    const updateData = { ...req.body };
-
-    if (req.files?.licenseFront?.[0]) {
-      updateData.licenseFront = req.files.licenseFront[0].path;
-    }
-
-    if (req.files?.licenseBack?.[0]) {
-      updateData.licenseBack = req.files.licenseBack[0].path;
-    }
-
-    const updated = await DriverLicense.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: false },
-      updateData,
-      { new: true },
-    );
-
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: "Driver license not found",
-      });
-    }
-
-    // SOCKET EVENT
-    const io = req.app.get("io");
-    if (io) io.emit("driverLicenseUpdated", updated);
-
-    return res.status(200).json({
-      success: true,
-      message: "Driver license updated successfully",
-      data: updated,
     });
   } catch (error) {
     return res.status(500).json({

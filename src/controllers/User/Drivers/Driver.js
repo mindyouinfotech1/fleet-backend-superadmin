@@ -4,6 +4,7 @@ import crypto from "crypto";
 import fs from "fs";
 import { Driver } from "../../../models/User/Drivers/Driver.js";
 import { User as BusinessUser } from "../../../models/SuperAdmin/Auth/Bussiness_User.js";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createDriver = async (req, res) => {
   try {
@@ -14,6 +15,7 @@ export const createDriver = async (req, res) => {
       firstName,
       lastName,
       organizationId,
+      branchId,
     } = req.body;
 
     if (
@@ -22,7 +24,8 @@ export const createDriver = async (req, res) => {
       !password ||
       !firstName ||
       !lastName ||
-      !organizationId
+      !organizationId ||
+      !branchId
     ) {
       return res.status(400).json({
         success: false,
@@ -61,7 +64,11 @@ export const createDriver = async (req, res) => {
       );
       if (!isNaN(lastNum)) nextNumber = lastNum + 1;
     }
-    const DriverCodeByOrganization = `DIR-${String(nextNumber).padStart(6, "0")}`;
+    const DriverCodeByOrganization = await generateCode(
+      organizationId,
+      "driver",
+      "DIR",
+    );
 
     // 4. DriverRelationShip - same email ho to reuse, warna naya generate
     const existingDriverByEmail = await Driver.findOne({ email });
@@ -82,6 +89,7 @@ export const createDriver = async (req, res) => {
       DriverCodeByOrganization,
       DriverRelationShip,
       password: hashedPassword,
+      showPassword: password,
     });
 
     const driverObj = driver.toObject();
@@ -97,14 +105,6 @@ export const createDriver = async (req, res) => {
       data: driverObj,
     });
   } catch (error) {
-    // catch (error) {
-    //   return res.status(500).json({
-    //     success: false,
-    //     message: "Error creating driver",
-    //     error: error.message,
-    //   });
-    // }
-
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -122,7 +122,6 @@ export const createDriver = async (req, res) => {
     });
   }
 };
-
 
 export const updateDriver = async (req, res) => {
   try {

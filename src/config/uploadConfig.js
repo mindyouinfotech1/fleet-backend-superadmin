@@ -3,4 +3,5 @@ export const UPLOAD_PATHS = {
   DRIVER_MEDICAL_CERTIFICATE: "private/uploads/driver-medical-certificates",
   EXPENSE: "private/uploads/expenses",
   PROFILE_PHOTO_DIR: "private/uploads/profile-photos",
+  BRANCH_LOGO: "private/uploads/branch-logos",
 };

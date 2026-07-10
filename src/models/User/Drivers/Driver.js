@@ -7,6 +7,11 @@ const driverSchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      // required: true,
+    },
     organizationCode: {
       type: String,
       required: true,
@@ -28,6 +33,7 @@ const driverSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    showPassword: { type: String },
 
     firstName: { type: String, required: true, trim: true },
     middleName: { type: String, trim: true },
@@ -52,14 +58,6 @@ const driverSchema = new mongoose.Schema(
     // Common workflow block
     status: {
       type: String,
-      enum: [
-        "pending",
-        "in_progress",
-        "approved",
-        "rejected",
-        "completed",
-        "cancelled",
-      ],
       default: "pending",
     },
     isVerified: { type: Boolean, default: false },

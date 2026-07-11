@@ -27,6 +27,7 @@ import emailOtpRoutes from "./routes/SuperAdmin/Email/EmailOtp.js";
 import forgetpassRoutes from "./routes/SuperAdmin/Email/forgetpass.js";
 import driverStatusRoutes from "./routes/User/Drivers/Driverstatusroutes.js";
 import branchRoutes from "./routes/SuperAdmin/Auth/Branch.js";
+import workOrderRoutes from "./routes/User/Work_Order_Trip/WorkOrder.js";
 
 dotenv.config();
 connectDB();
@@ -64,6 +65,8 @@ app.get("/api/private-file", (req, res) => {
 });
 
 app.use("/api/branches", branchRoutes);
+
+app.use("/api/work-orders", workOrderRoutes);
 
 app.use("/api/fleet-user", fleetUserAuthRoutes);
 app.use("/api/fleet-sub-admin", fleetSubAdminRoutes);

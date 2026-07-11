@@ -4,4 +4,8 @@ export const UPLOAD_PATHS = {
   EXPENSE: "private/uploads/expenses",
   PROFILE_PHOTO_DIR: "private/uploads/profile-photos",
   BRANCH_LOGO: "private/uploads/branch-logos",
+
+  // Work Order ke liye naye paths
+  WORK_ORDER_DOCUMENTS: "private/uploads/work-order-documents",
+  WORK_ORDER_POD: "private/uploads/work-order-pod",
 };

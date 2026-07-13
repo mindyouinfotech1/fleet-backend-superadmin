@@ -7,8 +7,7 @@ import fs from "fs";
 import http from "http";
 import { Server } from "socket.io";
 
-// import tenantRoutes from "./routes/SuperAdmin/Auth/Tenant.js";
-// import userRoutes from "./routes/SuperAdmin/Auth/Users.js";
+
 import businessUserRoutes from "./routes/SuperAdmin/Auth/Bussiness_User.js";
 import driverRoutes from "./routes/User/Drivers/Driver.js";
 import driverLicenseRoutes from "./routes/User/Drivers/DriverLicense.js";
@@ -28,6 +27,9 @@ import forgetpassRoutes from "./routes/SuperAdmin/Email/forgetpass.js";
 import driverStatusRoutes from "./routes/User/Drivers/Driverstatusroutes.js";
 import branchRoutes from "./routes/SuperAdmin/Auth/Branch.js";
 import workOrderRoutes from "./routes/User/Work_Order_Trip/WorkOrder.js";
+import customerRoutes from "./routes/User/Work_Order_Trip/Customer.js";
+import serviceTypeRoutes from "./routes/User/Work_Order_Trip/ServiceType.js";
+import maintenanceHistoryRoutes from "./routes/User/Equipment/MaintenanceHistory.js";
 
 dotenv.config();
 connectDB();
@@ -66,7 +68,10 @@ app.get("/api/private-file", (req, res) => {
 
 app.use("/api/branches", branchRoutes);
 
+// WORK ORDER ROUTES
 app.use("/api/work-orders", workOrderRoutes);
+app.use("/api/customer", customerRoutes);
+app.use("/api/service-type", serviceTypeRoutes);
 
 app.use("/api/fleet-user", fleetUserAuthRoutes);
 app.use("/api/fleet-sub-admin", fleetSubAdminRoutes);
@@ -85,6 +90,7 @@ app.use("/api/payroll-records", payrollRoutes);
 
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/maintenance-due", maintenanceRoutes);
+app.use("/api/maintenance-history", maintenanceHistoryRoutes);
 app.use("/api/workshops", WorkshopRoutes);
 app.use("/api/part-replacements", partReplacementRoutes);
 

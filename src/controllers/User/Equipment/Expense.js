@@ -77,6 +77,38 @@ export const getAllExpenses = async (req, res) => {
   }
 };
 
+export const getExpensesByEquipment = async (req, res) => {
+  try {
+    const { equipmentId } = req.params;
+
+    if (!equipmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Equipment ID is required",
+      });
+    }
+
+    const expenses = await Expense.find({
+      equipmentId: equipmentId,
+    })
+      .populate("organizationId")
+      .populate("equipmentId")
+      .populate("driverId")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: expenses.length,
+      data: expenses,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const getExpenseById = async (req, res) => {
   try {
     const expense = await Expense.findById(req.params.id)

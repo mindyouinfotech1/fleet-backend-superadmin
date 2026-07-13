@@ -1,8 +1,6 @@
 import TyreReplacement from "../../../models/User/Maintenance/TyreReplacement.js";
 
-/**
- * CREATE Tyre Replacement
- */
+
 export const createTyreReplacement = async (req, res) => {
   try {
     const {
@@ -49,9 +47,6 @@ export const createTyreReplacement = async (req, res) => {
   }
 };
 
-/**
- * GET ALL
- */
 export const getAllTyreReplacements = async (req, res) => {
   try {
     const { organizationId, equipmentId, driverId, workshopId } = req.query;
@@ -83,9 +78,39 @@ export const getAllTyreReplacements = async (req, res) => {
   }
 };
 
-/**
- * GET BY ID
- */
+export const getTyreReplacementsByEquipment = async (req, res) => {
+  try {
+    const { equipmentId } = req.params;
+
+    if (!equipmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Equipment ID is required",
+      });
+    }
+
+    const data = await TyreReplacement.find({
+      equipmentId: equipmentId,
+    })
+      .populate("organizationId")
+      .populate("equipmentId")
+      .populate("driverId")
+      .populate("workshopId")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const getTyreReplacementById = async (req, res) => {
   try {
     const data = await TyreReplacement.findById(req.params.id)
@@ -113,9 +138,7 @@ export const getTyreReplacementById = async (req, res) => {
   }
 };
 
-/**
- * UPDATE
- */
+
 export const updateTyreReplacement = async (req, res) => {
   try {
     const updated = await TyreReplacement.findByIdAndUpdate(
@@ -151,9 +174,7 @@ export const updateTyreReplacement = async (req, res) => {
   }
 };
 
-/**
- * DELETE
- */
+
 export const deleteTyreReplacement = async (req, res) => {
   try {
     const deleted = await TyreReplacement.findByIdAndDelete(req.params.id);

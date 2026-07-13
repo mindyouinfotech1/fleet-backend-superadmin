@@ -22,6 +22,36 @@ const maintenanceSchema = new mongoose.Schema(
       required: true,
     },
 
+    start_km: {
+      type: Number,
+      default: null,
+    },
+
+    next_service_due_km: {
+      type: Number,
+      default: null,
+    },
+
+    remaining_km: {
+      type: Number,
+      default: null,
+    },
+
+    start_hours: {
+      type: Number,
+      default: null,
+    },
+
+    next_service_due_hours: {
+      type: Number,
+      default: null,
+    },
+
+    remaining_hours: {
+      type: Number,
+      default: null,
+    },
+
     //  Reading at time of maintenance
     service_km: {
       type: Number,
@@ -68,8 +98,6 @@ const maintenanceSchema = new mongoose.Schema(
       type: Number,
       default: 20,
     },
-
- 
 
     status: {
       type: String,

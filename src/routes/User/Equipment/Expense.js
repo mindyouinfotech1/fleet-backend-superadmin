@@ -6,6 +6,7 @@ import { UPLOAD_PATHS } from "../../../config/uploadConfig.js";
 import {
   createExpense,
   getAllExpenses,
+  getExpensesByEquipment,
   getExpenseById,
   updateExpense,
   deleteExpense,
@@ -20,6 +21,7 @@ const upload = createUploader({
 
 router.post("/", upload.single("receipt"), createExpense);
 router.get("/", getAllExpenses);
+router.get("/equipment/:equipmentId", getExpensesByEquipment);
 router.get("/:id", getExpenseById);
 router.put("/:id", upload.single("receipt"), updateExpense);
 router.delete("/:id", deleteExpense);

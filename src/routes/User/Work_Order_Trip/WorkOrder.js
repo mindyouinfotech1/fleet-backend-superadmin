@@ -15,18 +15,13 @@ import {
   deleteWorkOrder,
   restoreWorkOrder,
   permanentDeleteWorkOrder,
-} from "../../../controllers/User/Work_Order_Trip/WorkOrder.js"; // apne project structure ke hisaab se path adjust karein
+} from "../../../controllers/User/Work_Order_Trip/WorkOrder.js";  
 
 import { createUploader } from "../../../middleware/createUploader.js";
 import { UPLOAD_PATHS } from "../../../config/uploadConfig.js";
 
-// import { protect } from "../../../middleware/auth.middleware.js"; // agar auth middleware hai to yahan add karein
 
 const router = express.Router();
-
-// documents aur POD ke liye uploader (UPLOAD_PATHS.js mein ye 2 keys add kar lena)
-// WORK_ORDER_DOCUMENTS: "private/uploads/work-order-documents"
-// WORK_ORDER_POD: "private/uploads/work-order-pod"
 
 const documentsUploader = createUploader({
   uploadPath: UPLOAD_PATHS.WORK_ORDER_DOCUMENTS,
@@ -38,8 +33,7 @@ const podUploader = createUploader({
   allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],
 });
 
-// create/update ke waqt dono fields ek saath aa sakti hain, is liye ek combined uploader
-// jo "documents" aur "pod" dono field names ko ek hi call mein handle kare
+
 const combinedUploader = createUploader({
   uploadPath: UPLOAD_PATHS.WORK_ORDER_DOCUMENTS, // dono field isi base folder mein save honge
   allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],

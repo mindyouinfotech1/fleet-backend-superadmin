@@ -7,11 +7,12 @@ const workOrderSchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
-    // customerId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Customer",
-    //   //   required: true,
-    // },
+    
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      //   required: true,
+    },
 
     // Work Order Details
     customerName: {

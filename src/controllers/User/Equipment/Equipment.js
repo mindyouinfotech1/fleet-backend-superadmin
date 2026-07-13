@@ -2,9 +2,11 @@ import { Equipment } from "../../../models/User/Equipment/Equipment.js";
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
-/* ===========================================================
-   HELPER: evaluateEligibility (common pattern)
-=========================================================== */
+
+const getDocumentPath = (file) => {
+  return `private/uploads/equipment/${file.filename}`;
+};
+
 const evaluateEligibility = (equipment, userId) => {
   const today = new Date();
 
@@ -68,9 +70,6 @@ const evaluateEligibility = (equipment, userId) => {
   }
 };
 
-/* ===========================================================
-   1) CREATE EQUIPMENT
-=========================================================== */
 export const createEquipment = async (req, res) => {
   try {
     const {
@@ -110,7 +109,9 @@ export const createEquipment = async (req, res) => {
       documents = req.files.map((file, index) => ({
         documentType: metadataList[index]?.documentType || "General",
         documentName: metadataList[index]?.documentName || file.originalname,
-        documentFile: file.path,
+        // documentFile: file.path,
+        documentFile: getDocumentPath(file),
+
         documentNumber: metadataList[index]?.documentNumber || "",
         issueDate: metadataList[index]?.issueDate || null,
         expiryDate: metadataList[index]?.expiryDate || null,
@@ -166,87 +167,6 @@ export const createEquipment = async (req, res) => {
   }
 };
 
-export const getAllEquipment = async (req, res) => {
-  try {
-    const { equipmentStatus, fuelType, search, organizationId } = req.query;
-
-    const filter = {};
-
-    // Organization filter
-    if (organizationId) {
-      if (!mongoose.Types.ObjectId.isValid(organizationId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid organizationId",
-        });
-      }
-
-      filter.organizationId = new mongoose.Types.ObjectId(organizationId);
-    }
-
-    // Status filter
-    if (equipmentStatus) {
-      filter.equipmentStatus = equipmentStatus;
-    }
-
-    // Fuel filter
-    if (fuelType) {
-      filter.fuelType = fuelType;
-    }
-
-    // Search filter
-    if (search) {
-      filter.$or = [
-        { equipmentName: { $regex: search, $options: "i" } },
-        { equipmentType: { $regex: search, $options: "i" } },
-        { registrationNumber: { $regex: search, $options: "i" } },
-        { equipmentIdNo: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    const equipments = await Equipment.find(filter).sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      count: equipments.length,
-      data: equipments,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-/* ===========================================================
-   3) GET SINGLE EQUIPMENT
-=========================================================== */
-export const getEquipmentById = async (req, res) => {
-  try {
-    const equipment = await Equipment.findById(req.params.id)
-      .populate(
-        "ownership.primaryDriver",
-        "firstName lastName phoneNumber email",
-      )
-      .populate("verifiedBy", "name email")
-      .populate("history.changedBy", "name email");
-
-    if (!equipment) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Equipment not found" });
-    }
-
-    res.status(200).json({ success: true, data: equipment });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-/* ===========================================================
-   4) UPDATE EQUIPMENT (section-wise)
-=========================================================== */
 export const updateEquipment = async (req, res) => {
   try {
     console.log("req.body:", req.body);
@@ -367,7 +287,8 @@ export const updateEquipment = async (req, res) => {
 
           // Agar user ne nayi file upload ki hai
           if (req.files?.[uploadedFileIndex]) {
-            doc.documentFile = req.files[uploadedFileIndex].path;
+            // doc.documentFile = req.files[uploadedFileIndex].path;
+            doc.documentFile = getDocumentPath(req.files[uploadedFileIndex]);
             uploadedFileIndex++;
           }
         }
@@ -414,9 +335,78 @@ export const updateEquipment = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   5) ADD DOCUMENT(S) to existing equipment
-=========================================================== */
+export const getAllEquipment = async (req, res) => {
+  try {
+    const { equipmentStatus, fuelType, search, organizationId } = req.query;
+
+    const filter = {};
+
+    // Organization filter
+    if (organizationId) {
+      if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid organizationId",
+        });
+      }
+
+      filter.organizationId = new mongoose.Types.ObjectId(organizationId);
+    }
+
+    // Status filter
+    if (equipmentStatus) {
+      filter.equipmentStatus = equipmentStatus;
+    }
+
+    // Fuel filter
+    if (fuelType) {
+      filter.fuelType = fuelType;
+    }
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { equipmentName: { $regex: search, $options: "i" } },
+        { equipmentType: { $regex: search, $options: "i" } },
+        { registrationNumber: { $regex: search, $options: "i" } },
+        { equipmentIdNo: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const equipments = await Equipment.find(filter).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: equipments.length,
+      data: equipments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getEquipmentById = async (req, res) => {
+  try {
+    const equipment = await Equipment.findById(req.params.id).populate(
+      "ownership.primaryDriver",
+      "firstName lastName phoneNumber email",
+    );
+
+    if (!equipment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Equipment not found" });
+    }
+
+    res.status(200).json({ success: true, data: equipment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const addDocuments = async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id);
@@ -461,9 +451,6 @@ export const addDocuments = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   6) DELETE SINGLE DOCUMENT from equipment
-=========================================================== */
 export const deleteDocument = async (req, res) => {
   try {
     // params: equipmentId, documentId
@@ -506,9 +493,6 @@ export const deleteDocument = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   7) SOFT DELETE EQUIPMENT
-=========================================================== */
 export const deleteEquipment = async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id);
@@ -540,9 +524,6 @@ export const deleteEquipment = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   8) RESTORE SOFT DELETED EQUIPMENT
-=========================================================== */
 export const restoreEquipment = async (req, res) => {
   try {
     const equipment = await Equipment.findById(req.params.id, null, {
@@ -577,9 +558,6 @@ export const restoreEquipment = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   9) UPDATE EQUIPMENT STATUS (manual override)
-=========================================================== */
 export const updateEquipmentStatus = async (req, res) => {
   try {
     const { equipmentStatus, reason } = req.body;
@@ -617,9 +595,6 @@ export const updateEquipmentStatus = async (req, res) => {
   }
 };
 
-/* ===========================================================
-   10) GET ALL DELETED (Admin only)
-=========================================================== */
 export const getDeletedEquipment = async (req, res) => {
   try {
     const equipments = await Equipment.find({ isDeleted: true }, null, {

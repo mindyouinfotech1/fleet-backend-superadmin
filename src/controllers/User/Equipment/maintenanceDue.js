@@ -1,13 +1,10 @@
 import { Maintenance } from "../../../models/User/Maintenance/maintenanceDue.js";
 import mongoose from "mongoose";
 
-/**
- * CREATE Maintenance
- */
 export const createMaintenance = async (req, res) => {
   try {
     const payload = req.body;
-
+    console.log("maintenance payload", payload);
     const data = await Maintenance.create({
       ...payload,
       history: [
@@ -32,9 +29,6 @@ export const createMaintenance = async (req, res) => {
   }
 };
 
-/**
- * GET ALL Maintenance (with filters)
- */
 export const getAllMaintenance = async (req, res) => {
   try {
     const { organizationId, equipment, status, isDeleted } = req.query;
@@ -65,9 +59,31 @@ export const getAllMaintenance = async (req, res) => {
   }
 };
 
-/**
- * GET BY ID
- */
+export const getMaintenanceByEquipment = async (req, res) => {
+  try {
+    const { equipmentId } = req.params;
+
+    const data = await Maintenance.find({
+      equipment: equipmentId,
+      isDeleted: false,
+    })
+      .populate("organizationId")
+      .populate("equipment")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const getMaintenanceById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -103,9 +119,6 @@ export const getMaintenanceById = async (req, res) => {
   }
 };
 
-/**
- * UPDATE Maintenance
- */
 export const updateMaintenance = async (req, res) => {
   try {
     const { id } = req.params;
@@ -136,9 +149,6 @@ export const updateMaintenance = async (req, res) => {
   }
 };
 
-/**
- * SOFT DELETE
- */
 export const deleteMaintenance = async (req, res) => {
   try {
     const { id } = req.params;
@@ -168,9 +178,6 @@ export const deleteMaintenance = async (req, res) => {
   }
 };
 
-/**
- * UPDATE STATUS (workflow)
- */
 export const updateStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -224,9 +231,6 @@ export const updateStatus = async (req, res) => {
   }
 };
 
-/**
- * VERIFY Maintenance
- */
 export const verifyMaintenance = async (req, res) => {
   try {
     const { id } = req.params;

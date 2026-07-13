@@ -2,6 +2,7 @@ import express from "express";
 import {
   createMaintenance,
   getAllMaintenance,
+  getMaintenanceByEquipment,
   getMaintenanceById,
   updateMaintenance,
   deleteMaintenance,
@@ -14,6 +15,7 @@ const router = express.Router();
 router.post("/", createMaintenance);
 router.get("/", getAllMaintenance);
 router.get("/:id", getMaintenanceById);
+router.get("/equipment/:equipmentId", getMaintenanceByEquipment);
 router.put("/:id", updateMaintenance);
 router.delete("/:id", deleteMaintenance);
 

@@ -118,34 +118,6 @@ export const createDriverLicense = async (req, res) => {
   }
 };
 
-/* =========================
-   UPDATE LICENSE
-========================= */
-
-// export const updateDriverLicense = async (req, res) => {
-//   try {
-//     const updateData = { ...req.body };
-
-//     if (req.files?.licenseFront?.[0]) {
-//       updateData.licenseFront = req.files.licenseFront[0].path;
-//     }
-
-//     if (req.files?.licenseBack?.[0]) {
-//       updateData.licenseBack = req.files.licenseBack[0].path;
-//     }
-
-//     const updated = await DriverLicense.findOneAndUpdate(
-//       { _id: req.params.id, isDeleted: false },
-//       updateData,
-//       { new: true },
-//     );
-
-//     if (!updated) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Driver license not found",
-//       });
-//     }
 
 export const updateDriverLicense = async (req, res) => {
   try {
@@ -221,86 +193,6 @@ export const getAllDriverLicenses = async (req, res) => {
   }
 };
 
-/* =========================
-   GET ALL LICENSES
-========================= */
-// export const getAllDriverLicenses = async (req, res) => {
-//   try {
-//     const { driverId, organizationId, countryCode, status } = req.query;
-
-//     const filter = {
-//       isDeleted: false,
-//     };
-
-//     if (driverId) filter.driverId = driverId;
-//     if (organizationId) filter.organizationId = organizationId;
-//     if (countryCode) filter.countryCode = countryCode;
-//     if (status) filter.status = status;
-
-//     const licenses = await DriverLicense.find(filter)
-//       .populate("driverId")
-//       .populate("verifiedBy", "name email")
-//       .sort({ createdAt: -1 });
-
-//     // Group by Driver
-//     const groupedDrivers = {};
-
-//     licenses.forEach((license) => {
-//       const driver = license.driverId;
-
-//       if (!driver) return;
-
-//       const driverKey = driver._id.toString();
-
-//       if (!groupedDrivers[driverKey]) {
-//         groupedDrivers[driverKey] = {
-//           driver: driver,
-//           totalLicenses: 0,
-//           licenses: [],
-//         };
-//       }
-
-//       groupedDrivers[driverKey].totalLicenses++;
-
-//       groupedDrivers[driverKey].licenses.push({
-//         _id: license._id,
-//         DriverLicensesCode: license.DriverLicensesCode,
-//         licenseNumber: license.licenseNumber,
-//         countryCode: license.countryCode,
-//         licenseType: license.licenseType,
-//         licenseClass: license.licenseClass,
-//         endorsements: license.endorsements,
-//         restrictions: license.restrictions,
-//         issueDate: license.issueDate,
-//         expiryDate: license.expiryDate,
-//         issuingAuthority: license.issuingAuthority,
-
-//         status: license.status,
-//         verified: license.verified,
-//         isExpired: license.isExpired,
-//         isDeleted: license.isDeleted,
-
-//         licenseFront: license.licenseFront,
-//         licenseBack: license.licenseBack,
-
-//         createdAt: license.createdAt,
-//         updatedAt: license.updatedAt,
-//       });
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       totalDrivers: Object.keys(groupedDrivers).length,
-//       totalLicenses: licenses.length,
-//       data: Object.values(groupedDrivers),
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
 
 /* =========================
    GET SINGLE LICENSE

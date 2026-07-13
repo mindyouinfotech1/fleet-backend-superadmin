@@ -2,6 +2,7 @@ import express from "express";
 import {
   createTyreReplacement,
   getAllTyreReplacements,
+  getTyreReplacementsByEquipment,
   getTyreReplacementById,
   updateTyreReplacement,
   deleteTyreReplacement,
@@ -11,6 +12,7 @@ const router = express.Router();
 
 router.post("/", createTyreReplacement);
 router.get("/", getAllTyreReplacements);
+router.get("/equipment/:equipmentId", getTyreReplacementsByEquipment);
 router.get("/:id", getTyreReplacementById);
 router.put("/:id", updateTyreReplacement);
 router.delete("/:id", deleteTyreReplacement);

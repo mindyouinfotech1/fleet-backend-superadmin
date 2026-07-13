@@ -48,42 +48,6 @@ export const createWorkshop = async (req, res) => {
   }
 };
 
-// export const getAllWorkshops = async (req, res) => {
-//   try {
-//     const { organizationId, status } = req.query;
-
-//     let filter = {};
-//     if (organizationId) filter.organizationId = organizationId;
-//     if (status) filter.status = status;
-
-//     const workshops = await Workshop.find(filter)
-//       .populate("organizationId")
-//       .populate({ path: "country", select: "name", model: "Country" })
-//       .populate({ path: "state", select: "name", model: "State" })
-//       .populate({ path: "city", select: "name", model: "City" })
-//       .sort({ createdAt: -1 });
-
-//     const result = workshops.map((w) => {
-//       const obj = w.toObject();
-//       obj.country = obj.country?.name || null;
-//       obj.state = obj.state?.name || null;
-//       obj.city = obj.city?.name || null;
-//       return obj;
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       count: result.length,
-//       data: result,
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
 export const getAllWorkshops = async (req, res) => {
   try {
     const { organizationId } = req.query;
@@ -112,9 +76,7 @@ export const getAllWorkshops = async (req, res) => {
   }
 };
 
-/**
- * GET SINGLE Workshop BY ID
- */
+
 export const getWorkshopById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -140,9 +102,7 @@ export const getWorkshopById = async (req, res) => {
   }
 };
 
-/**
- * UPDATE Workshop
- */
+
 export const updateWorkshop = async (req, res) => {
   try {
     const { id } = req.params;
@@ -176,9 +136,6 @@ export const updateWorkshop = async (req, res) => {
   }
 };
 
-/**
- * DELETE Workshop
- */
 export const deleteWorkshop = async (req, res) => {
   try {
     const { id } = req.params;

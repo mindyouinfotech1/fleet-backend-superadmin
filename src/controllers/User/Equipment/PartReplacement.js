@@ -1,8 +1,5 @@
 import PartReplacement from "../../../models/User/Maintenance/PartReplacement.js";
 
-/**
- * CREATE PART REPLACEMENT
- */
 export const createPartReplacement = async (req, res) => {
   try {
     const {
@@ -50,9 +47,6 @@ export const createPartReplacement = async (req, res) => {
   }
 };
 
-/**
- * GET ALL PART REPLACEMENTS
- */
 export const getAllPartReplacements = async (req, res) => {
   try {
     const { organizationId, equipmentId, driverId, workshopId, status } =
@@ -86,9 +80,39 @@ export const getAllPartReplacements = async (req, res) => {
   }
 };
 
-/**
- * GET SINGLE PART REPLACEMENT
- */
+export const getPartReplacementsByEquipment = async (req, res) => {
+  try {
+    const { equipmentId } = req.params;
+
+    if (!equipmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Equipment ID is required",
+      });
+    }
+
+    const replacements = await PartReplacement.find({
+      equipmentId: equipmentId,
+    })
+      .populate("organizationId")
+      .populate("equipmentId")
+      .populate("driverId")
+      .populate("workshopId")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: replacements.length,
+      data: replacements,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const getPartReplacementById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -118,9 +142,6 @@ export const getPartReplacementById = async (req, res) => {
   }
 };
 
-/**
- * UPDATE PART REPLACEMENT
- */
 export const updatePartReplacement = async (req, res) => {
   try {
     const { id } = req.params;
@@ -162,9 +183,6 @@ export const updatePartReplacement = async (req, res) => {
   }
 };
 
-/**
- * DELETE PART REPLACEMENT
- */
 export const deletePartReplacement = async (req, res) => {
   try {
     const { id } = req.params;

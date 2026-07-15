@@ -1,4 +1,5 @@
 import PartReplacement from "../../../models/User/Maintenance/PartReplacement.js";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createPartReplacement = async (req, res) => {
   try {
@@ -16,8 +17,14 @@ export const createPartReplacement = async (req, res) => {
       status,
     } = req.body;
 
+    const partReplacementCode = await generateCode(
+      organizationId,
+      "partReplacement",
+      "PR",
+    );
     const partReplacement = await PartReplacement.create({
       organizationId,
+      partReplacementCode,
       equipmentId,
       driverId,
       workshopId,

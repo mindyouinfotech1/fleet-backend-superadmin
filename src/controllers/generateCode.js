@@ -7,7 +7,7 @@ export const generateCode = async (organizationId, entityType, prefix) => {
     { new: true, upsert: true },
   );
 
-  const paddedSeq = String(counter.seq).padStart(6, "0"); // 000001
+  const paddedSeq = String(counter.seq).padStart(6, "0"); 
 
   return `${prefix}-${paddedSeq}`;
 };

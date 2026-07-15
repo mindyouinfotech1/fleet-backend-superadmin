@@ -2,6 +2,7 @@ import { Equipment } from "../../../models/User/Equipment/Equipment.js";
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 const getDocumentPath = (file) => {
   return `private/uploads/equipment/${file.filename}`;
@@ -119,8 +120,16 @@ export const createEquipment = async (req, res) => {
       }));
     }
 
+    //  iski jagah ye ek line
+    const equipmentCode = await generateCode(
+      organizationId,
+      "Equipment",
+      "EQP",
+    );
+
     const equipment = new Equipment({
       organizationId,
+      equipmentCode,
       equipmentType,
       equipmentName,
       equipmentIdNo,

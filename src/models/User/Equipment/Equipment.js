@@ -9,6 +9,12 @@ const equipmentSchema = new mongoose.Schema(
       index: true,
     },
 
+    equipmentCode: {
+      type: String,
+      // required: true,
+      trim: true,
+    },
+
     /* ===========================================================
        1) EQUIPMENT INFO
     =========================================================== */

@@ -6,7 +6,12 @@ const tyreReplacementSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "BusinessUser",
         required: true,
-      },
+    },
+    tyreReplacementCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   
       equipmentId: {
         type: mongoose.Schema.Types.ObjectId,

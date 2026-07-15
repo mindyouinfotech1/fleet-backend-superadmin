@@ -9,6 +9,12 @@ const customerSchema = new mongoose.Schema(
       required: true,
     },
 
+        customerCode: {
+      type: String,
+      required: true,
+      trim: true,
+        },
+      
     customerName: {
       type: String,
       required: true,

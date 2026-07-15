@@ -8,6 +8,11 @@ const maintenanceSchema = new mongoose.Schema(
       required: true,
       //   index: true,
     },
+    maintenanceDueCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     //  Equipment Reference
     equipment: {

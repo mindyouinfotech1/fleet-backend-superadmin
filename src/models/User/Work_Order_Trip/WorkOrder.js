@@ -7,7 +7,11 @@ const workOrderSchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
-    
+    workOrderCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",

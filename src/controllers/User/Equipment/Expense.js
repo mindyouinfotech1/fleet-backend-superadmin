@@ -1,5 +1,6 @@
 import Expense from "../../../models/User/Maintenance/Expense.js";
 import fs from "fs";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createExpense = async (req, res) => {
   try {
@@ -16,8 +17,10 @@ export const createExpense = async (req, res) => {
       status,
     } = req.body;
 
+    const expenseCode = await generateCode(organizationId, "expense", "EXP");
     const expense = await Expense.create({
       organizationId,
+      expenseCode,
       equipmentId,
       driverId,
       expenseType,

@@ -1,12 +1,20 @@
 import { Maintenance } from "../../../models/User/Maintenance/maintenanceDue.js";
 import mongoose from "mongoose";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createMaintenance = async (req, res) => {
   try {
     const payload = req.body;
-    console.log("maintenance payload", payload);
+    // console.log("maintenance payload", payload);
+
+    const maintenanceDueCode = await generateCode(
+      payload.organizationId,
+      "maintenance",
+      "MDC",
+    );
     const data = await Maintenance.create({
       ...payload,
+      maintenanceDueCode,
       history: [
         {
           status: "pending",

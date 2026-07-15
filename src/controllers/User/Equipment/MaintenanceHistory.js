@@ -1,5 +1,6 @@
 import { MaintenanceHistory } from "../../../models/User/Maintenance/MaintenanceHistory.js";
 import { Maintenance } from "../../../models/User/Maintenance/maintenanceDue.js";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 const emitToOrg = (req, organizationId, equipmentId, event, payload) => {
   const io = req.app.get("io");
@@ -53,8 +54,15 @@ export const createMaintenanceHistory = async (req, res) => {
       isDeleted: false,
     });
 
+    const maintenanceCode = await generateCode(
+      organizationId,
+      "maintenanceHistory",
+      "MH",
+    );
+
     const historyDoc = await MaintenanceHistory.create({
       organizationId,
+      maintenanceCode,
       equipment,
       maintenanceId: dueRecord?._id || null,
       driverId,

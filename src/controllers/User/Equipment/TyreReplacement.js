@@ -1,5 +1,5 @@
 import TyreReplacement from "../../../models/User/Maintenance/TyreReplacement.js";
-
+import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createTyreReplacement = async (req, res) => {
   try {
@@ -17,8 +17,15 @@ export const createTyreReplacement = async (req, res) => {
       odometerReadingAtReplacement,
     } = req.body;
 
+    const tyreReplacementCode = await generateCode(
+      organizationId,
+      "tyreReplacement",
+      "TY",
+    );
+
     const newEntry = await TyreReplacement.create({
       organizationId,
+      tyreReplacementCode,
       equipmentId,
       driverId,
       workshopId,
@@ -138,7 +145,6 @@ export const getTyreReplacementById = async (req, res) => {
   }
 };
 
-
 export const updateTyreReplacement = async (req, res) => {
   try {
     const updated = await TyreReplacement.findByIdAndUpdate(
@@ -173,7 +179,6 @@ export const updateTyreReplacement = async (req, res) => {
     });
   }
 };
-
 
 export const deleteTyreReplacement = async (req, res) => {
   try {

@@ -7,6 +7,13 @@ const serviceTypeSchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
+
+        serviceTypeCode: {
+      type: String,
+      required: true,
+      trim: true,
+        },
+
     ServiceTypeId: {
       type: String,
       required: true,

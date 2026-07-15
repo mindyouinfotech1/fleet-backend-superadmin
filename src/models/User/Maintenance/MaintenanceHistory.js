@@ -7,6 +7,11 @@ const maintenanceHistorySchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
+    maintenanceCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     equipment: {
       type: mongoose.Schema.Types.ObjectId,

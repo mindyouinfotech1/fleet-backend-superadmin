@@ -6,8 +6,6 @@ import path from "path";
 import fs from "fs";
 import http from "http";
 import { Server } from "socket.io";
-
-
 import businessUserRoutes from "./routes/SuperAdmin/Auth/Bussiness_User.js";
 import driverRoutes from "./routes/User/Drivers/Driver.js";
 import driverLicenseRoutes from "./routes/User/Drivers/DriverLicense.js";

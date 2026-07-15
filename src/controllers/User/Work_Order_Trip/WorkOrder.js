@@ -1,18 +1,12 @@
 import mongoose from "mongoose";
 import fs from "fs";
-
 import { WorkOrder } from "../../../models/User/Work_Order_Trip/WorkOrder.js";
+import { generateCode } from "../../../controllers/generateCode.js";
 
-/**
- * Helper: standard response sender
- */
 const sendResponse = (res, status, success, message, data = null) => {
   return res.status(status).json({ success, message, data });
 };
 
-/**
- * Helper: convert multer's req.files (from upload.fields / upload.array) into DB-storable array
- */
 const mapUploadedFiles = (files = []) => {
   return (files || []).map((file) => ({
     fileName: file.originalname,
@@ -20,9 +14,6 @@ const mapUploadedFiles = (files = []) => {
   }));
 };
 
-/**
- * Helper: safely delete files from disk (used on rollback / replace)
- */
 const deleteFilesFromDisk = (files = []) => {
   files.forEach((file) => {
     const filePath = file.fileUrl;
@@ -34,20 +25,13 @@ const deleteFilesFromDisk = (files = []) => {
   });
 };
 
-/**
- * @desc    Create new Work Order
- * @route   POST /api/work-orders
- * @access  Private
- */
 export const createWorkOrder = async (req, res) => {
   try {
-    const { organizationId } = req.user || req.body; // auth middleware se organizationId aana chahiye
+    const { organizationId } = req.user || req.body;
 
-    // upload.fields([{ name: "documents" }, { name: "pod" }]) se req.files object milega
     const documentFiles = mapUploadedFiles(req.files?.documents);
     const podFiles = mapUploadedFiles(req.files?.pod);
 
-    // multipart/form-data mein nested object client se JSON string ke roop mein aata hai
     let worksite = req.body.worksite;
     if (typeof worksite === "string") {
       try {
@@ -66,9 +50,12 @@ export const createWorkOrder = async (req, res) => {
       }
     }
 
+    const workOrderCode = await generateCode(organizationId, "WorkOrder", "WO");
+
     const payload = {
       ...req.body,
       organizationId: organizationId || req.body.organizationId,
+      workOrderCode,
       documents: documentFiles,
       billing,
       worksite: {
@@ -102,16 +89,12 @@ export const createWorkOrder = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get all Work Orders (with filters, search, pagination)
- * @route   GET /api/work-orders
- * @access  Private
- */
+
 export const getAllWorkOrders = async (req, res) => {
   try {
     const {
       organizationId,
-      customerId = "6a520d1be6814256b04bda7f",
+      customerId,
       workStatus,
       status,
       verifyStatus,
@@ -180,11 +163,7 @@ export const getAllWorkOrders = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get single Work Order by ID
- * @route   GET /api/work-orders/:id
- * @access  Private
- */
+
 export const getWorkOrderById = async (req, res) => {
   try {
     const { id } = req.params;

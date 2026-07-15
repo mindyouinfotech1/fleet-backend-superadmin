@@ -205,6 +205,7 @@ export const updateUserPassword = async (req, res) => {
 // ================= UPDATE SUB-ADMIN =================
 export const updateSubAdmin = async (req, res) => {
   try {
+    // console.log("req.body", req.body);
     const { id } = req.params;
 
     const existing = await FleetUser.findById(id);
@@ -217,18 +218,6 @@ export const updateSubAdmin = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Sub-Admin not found",
-      });
-    }
-
-    // Prevent editing Org Admin from this endpoint
-    if (existing.isOrgAdmin) {
-      if (req.file) {
-        deletePhotoFile(`${PROFILE_PHOTO_DIR}/${req.file.filename}`);
-      }
-
-      return res.status(403).json({
-        success: false,
-        message: "Org admin cannot be edited from this endpoint",
       });
     }
 

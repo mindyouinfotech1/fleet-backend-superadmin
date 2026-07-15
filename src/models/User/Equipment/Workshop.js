@@ -8,6 +8,11 @@ const workshopSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    workshopCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     workshopName: {
       type: String,
@@ -27,7 +32,7 @@ const workshopSchema = new mongoose.Schema(
       trim: true,
     },
 
-  country: {
+    country: {
       type: Number,
       ref: "Country",
       required: true,
@@ -63,7 +68,7 @@ const workshopSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Workshop", workshopSchema);

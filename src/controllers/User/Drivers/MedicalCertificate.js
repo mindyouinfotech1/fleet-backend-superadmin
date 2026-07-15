@@ -45,9 +45,15 @@ export const createMedicalCertificate = async (req, res) => {
     let certificateUpload = [];
 
     if (req.files && req.files.length > 0) {
-      certificateUpload = req.files.map((file) => ({
-        certificatename: file.originalname,
-        certificatefile: `/uploads/${file.filename}`,
+      const certificateNames = Array.isArray(req.body.certificatename)
+        ? req.body.certificatename
+        : req.body.certificatename
+          ? [req.body.certificatename]
+          : [];
+
+      certificateUpload = req.files.map((file, index) => ({
+        certificatename: certificateNames[index] || file.originalname,
+        certificatefile: file.path,
       }));
     }
 
@@ -121,14 +127,33 @@ export const updateMedicalCertificate = async (req, res) => {
   try {
     const updateData = { ...req.body };
 
-    if (req.files && req.files.length > 0) {
-      updateData.certificateUpload = req.files.map((file) => ({
-        certificatename: file.originalname,
-        certificatefile: `/uploads/${file.filename}`,
-      }));
+    const existingCertificate = await MedicalCertificate.findById(
+      req.params.id,
+    );
+
+    if (!existingCertificate) {
+      return res.status(404).json({
+        success: false,
+        message: "Medical Certificate not found",
+      });
     }
 
-    //  NAYA: expiryDate diya gaya ho to naya status calculate karo
+    if (req.files && req.files.length > 0) {
+      const certificateNames = Array.isArray(req.body.certificatename)
+        ? req.body.certificatename
+        : [req.body.certificatename];
+
+      const uploadedFiles = req.files.map((file, index) => ({
+        certificatename: certificateNames[index] || file.originalname,
+        certificatefile: file.path,
+      }));
+
+      updateData.certificateUpload = [
+        ...(existingCertificate.certificateUpload || []),
+        ...uploadedFiles,
+      ];
+    }
+
     if (updateData.expiryDate) {
       updateData.status = calculateCertificateStatus(updateData.expiryDate);
     }
@@ -139,7 +164,6 @@ export const updateMedicalCertificate = async (req, res) => {
       { new: true },
     );
 
-    //  SOCKET EVENT
     const io = req.app.get("io");
     if (io) io.emit("medicalCertificateUpdated", certificate);
 
@@ -261,26 +285,14 @@ export const verifyMedicalCertificate = async (req, res) => {
       });
     }
 
-    certificate.status = status;
+    // certificate.status = status;
 
-    if (status === "approved") {
+    if (status === "active") {
       certificate.isVerified = true;
-      certificate.verifiedBy = adminId;
+      // certificate.verifiedBy = adminId;
       certificate.verifiedAt = new Date();
       certificate.isEligible = true;
     }
-
-    if (status === "rejected") {
-      certificate.isVerified = false;
-      certificate.rejectionReason = reason;
-      certificate.isEligible = false;
-    }
-
-    certificate.history.push({
-      status,
-      changedBy: adminId,
-      reason,
-    });
 
     await certificate.save();
 

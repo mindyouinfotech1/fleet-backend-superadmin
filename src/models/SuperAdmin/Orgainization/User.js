@@ -56,7 +56,6 @@ const UserSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ["male", "female", "other", null],
       default: null,
     },
     dateOfBirth: {
@@ -69,7 +68,7 @@ const UserSchema = new mongoose.Schema(
 
     isOrgAdmin: {
       type: Boolean,
-      default: false, // sirf ek user ke liye true (main admin)
+      default: false, 
     },
     lastLogin: {
       type: Date,

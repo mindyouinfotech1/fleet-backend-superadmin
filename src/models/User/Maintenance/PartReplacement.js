@@ -7,6 +7,11 @@ const PartReplacementSchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
+    partReplacementCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     equipmentId: {
       type: mongoose.Schema.Types.ObjectId,

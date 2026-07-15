@@ -2,6 +2,7 @@ import Workshop from "../../../models/User/Equipment/Workshop.js";
 import country from "../../../models/Address/country.js";
 import state from "../../../models/Address/state.js";
 import city from "../../../models/Address/city.js";
+import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createWorkshop = async (req, res) => {
   try {
@@ -18,8 +19,11 @@ export const createWorkshop = async (req, res) => {
       status,
     } = req.body;
 
+    const workshopCode = await generateCode(organizationId, "workshop", "WS");
+
     const workshop = await Workshop.create({
       organizationId,
+      workshopCode,
       workshopName,
       workshopOwner,
       workshopEmail,
@@ -76,7 +80,6 @@ export const getAllWorkshops = async (req, res) => {
   }
 };
 
-
 export const getWorkshopById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +104,6 @@ export const getWorkshopById = async (req, res) => {
     });
   }
 };
-
 
 export const updateWorkshop = async (req, res) => {
   try {

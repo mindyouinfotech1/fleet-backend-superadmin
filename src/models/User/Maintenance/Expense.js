@@ -7,6 +7,11 @@ const expenseSchema = new mongoose.Schema(
       ref: "BusinessUser",
       required: true,
     },
+    expenseCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     equipmentId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -24,7 +29,6 @@ const expenseSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-    
     },
 
     date: {
@@ -51,7 +55,7 @@ const expenseSchema = new mongoose.Schema(
 
     paymentMode: {
       type: String,
-    //   required: true,
+      //   required: true,
     },
 
     tripId: {
@@ -68,7 +72,7 @@ const expenseSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Expense", expenseSchema);

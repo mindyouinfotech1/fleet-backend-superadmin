@@ -1,0 +1,1545 @@
+<?php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Http\Middleware\AdminLoginCheck;
+use App\Models\Admins;
+use App\Models\student;
+use App\Models\teacher;
+use App\Models\section;
+use App\Models\Classes;
+use App\Models\subject;
+use App\Models\student_session;
+use App\Models\Orders;
+use Session;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
+use App\Models\Users;
+use App\Models\marks;
+use App\Models\fee;
+
+
+
+
+class AdminController extends Controller
+{
+
+    function login_page()
+    {
+        return view('login');
+    }
+    //Admin Login
+    public function Admin_Login(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
+
+            // Find the admin by admin_id
+            $admin = Users::where('email', $request->email)->first();
+            if ($admin) {
+
+                if ($admin->password == $request->password) {
+                    session(['user' => $admin->user_id]);
+                    return redirect('/dashboard');
+                } else {
+                    return back()->with('error', ' Invalid Password');
+                }
+            } else {
+                return back()->with('error', 'User name or password is incorrect');
+            }
+        } catch (\Exception $exception) {
+            // Handle exceptions if needed
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    // Admin Logout
+    public function AdminLogout()
+    {
+        if (session()->has('user')) {
+            $user = session('user');
+
+            session()->flush();
+            session()->flash('success', 'Logout Successfully');
+
+            return redirect('/');
+        } else {
+            session()->flash('error', 'You are not currently logout in as admin');
+            return redirect('/');
+        }
+    }
+
+    // Dasboard
+    function Dasboard()
+    {
+        return view('Admin.index');
+    }
+    //Show class
+    function Class()
+    {
+        $class = Classes::where('is_active', 1)->where('is_deleted', 0)->get();
+        return view('Admin.class', compact('class'));
+    }
+    function AddClass(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'numeric_name' => 'required',
+
+        ]);
+        try {
+            $class = new Classes;
+            $class->class_id = 'CLASS' . rand('100000', '999999');
+            $class->class_name = ucfirst($request->name);
+            $class->numeric_name = $request->numeric_name;
+
+            $class->save();
+            return redirect()->back()->with('success', 'Class added successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Class not added ' . $e->getMessage());
+        }
+    }
+
+
+    // Delete Class
+    function DeleteClass($id)
+    {
+        try {
+            $class = Classes::where('class_id', $id)->first();
+            $class->is_deleted = 1;
+            $class->save();
+            return redirect()->back()->with('success', 'Class deleted successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Class not deleted ' . $e->getMessage());
+        }
+    }
+
+    // Update Class
+    function UpdateClass(Request $request)
+    {
+        $request->validate([
+            'class_id' => 'required',
+            'name' => 'required|string|max:255',
+            'numeric_name' => 'required',
+
+        ]);
+        try {
+            $class = Classes::where('class_id', $request->class_id)->first();
+            if ($class) {
+                $class->class_name = ucfirst($request->name);
+                $class->numeric_name = $request->numeric_name;
+
+                $class->save();
+                return redirect()->back()->with('success', 'Class updated successfully');
+
+            }
+            return redirect()->back()->with('error', 'Class not Found');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Class not updated ' . $e->getMessage());
+        }
+    }
+
+    // Start Teacher Section
+//Show Teacher
+    function Teacher()
+    {
+        $teacher = teacher::where('is_active', 1)->where('is_deleted', 0)->get();
+        return view('Admin.teachers', compact('teacher'));
+
+
+    }
+    //Add Teacher
+    function AddTeacher(Request $request)
+    {
+        $request->validate([
+            'teacher_name' => 'required|string|max:255',
+            'dob' => 'required',
+            'age' => 'required',
+            'mobile' => 'required',
+            'email' => 'required|email',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'country' => 'required|string',
+            'register_date' => 'required',
+            'job_type' => 'required|string',
+            'photo' => 'nullable|file|mimes:jpeg,png,jpg',
+        ]);
+        $teacher = new teacher;
+        $teacher->teacher_id = 'TEACHER' . rand('100000', '999999');
+        $teacher->teacher_name = $request->teacher_name;
+        $teacher->dob = $request->dob;
+        $teacher->age = $request->age;
+        $teacher->mobile = $request->mobile;
+        $teacher->email = $request->email;
+        $teacher->address = $request->address;
+        $teacher->city = $request->city;
+        $teacher->country = $request->country;
+        $teacher->reg_date = $request->register_date;
+        $teacher->job_type = $request->job_type;
+        if ($request->hasFile('photo')) {
+            $image = $request->file('photo');
+            $imagePath = 'teacher_img/' . time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('teacher_img'), $imagePath);
+            $teacher->profile_image = $imagePath;
+        }
+        $teacher->save();
+        return redirect()->back()->with('success', 'Teacher added successfully');
+
+
+    }
+
+    //Edit Teacher
+
+    function UpdateTeacher(Request $request)
+    {
+        $request->validate([
+            'teacher_id' => 'required',
+            'teacher_name' => 'required|string|max:255',
+            'dob' => 'required',
+            'age' => 'required',
+            'mobile' => 'required',
+            'email' => 'required|email',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'country' => 'required|string',
+            'register_date' => 'required',
+            'job_type' => 'required|string',
+            'photo' => 'nullable|file|mimes:jpeg,png,jpg',
+        ]);
+        $teacher = teacher::where('teacher_id', $request->teacher_id)->first();
+        if ($teacher) {
+            $teacher->teacher_name = $request->teacher_name;
+            $teacher->dob = $request->dob;
+            $teacher->age = $request->age;
+            $teacher->mobile = $request->mobile;
+            $teacher->email = $request->email;
+            $teacher->address = $request->address;
+            $teacher->city = $request->city;
+            $teacher->country = $request->country;
+            $teacher->reg_date = $request->register_date;
+            $teacher->job_type = $request->job_type;
+            if ($request->hasFile('photo')) {
+                $image = $request->file('photo');
+                $imagePath = 'teacher_img/' . time() . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('teacher_img'), $imagePath);
+                $teacher->profile_image = $imagePath;
+            }
+            $teacher->save();
+            return redirect()->back()->with('success', 'Teacher Updated successfully');
+
+        }
+    }
+
+    // Delete Teacher
+
+    function DeleteTeacher($id)
+    {
+        try {
+            $teacher = teacher::where('teacher_id', $id)->first();
+            if ($teacher) {
+                $teacher->is_deleted = 1;
+                $teacher->save();
+                return redirect()->back()->with('success', 'Teacher deleted successfully');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Teacher not deleted ' . $e->getMessage());
+        }
+
+    }
+
+
+    //get section data by class id
+    function get_section($class_id)
+    {
+        $section = section::where('class_id', $class_id)->where('sections.is_deleted', 0)->where('sections.is_active', 1)->join('teachers', 'sections.teacher_id', '=', 'teachers.teacher_id')
+            ->select('sections.section_name', 'teachers.teacher_name', 'sections.sec_id as section_id', 'sections.teacher_id', 'sections.class_id')->
+
+            get();
+        if ($section) {
+            return response()->json(['success' => 'success', 'section' => $section], 200);
+        }
+        return response()->json(['error' => 'error'], 500);
+
+    }
+
+    //add section
+    function add_section(Request $request)
+    {
+
+        $request->validate([
+            'class_id' => 'required',
+            'section_name' => 'required|string|max:255',
+            'teacher_id' => 'required',
+        ]);
+        $section = new section();
+        $section->sec_id = 'SECTION' . rand('100000', '999999');
+        $section->class_id = $request->class_id;
+        $section->section_name = ucwords($request->section_name);
+        $section->teacher_id = $request->teacher_id;
+        $section->save();
+        return redirect()->back()->with('success', 'Section added successfully');
+    }
+
+    //update section
+    function UpdateSection(Request $request)
+    {
+        $request->validate([
+            'class_id' => 'required',
+            'section_name' => 'required|string|max:255',
+            'teacher_id' => 'required',
+            'section_id' => 'required',
+        ]);
+        $section = section::where('sec_id', $request->section_id)->first();
+        if ($section) {
+            $section->class_id = $request->class_id;
+            $section->section_name = ucwords($request->section_name);
+            $section->teacher_id = $request->teacher_id;
+            $section->save();
+            return redirect()->back()->with('success', 'Section updated successfully');
+        }
+        return redirect()->back()->with('error', 'Section not Found');
+    }
+    //delete section
+    function DeleteSection($id)
+    {
+        $section = section::where('sec_id', $id)->first();
+        if ($section) {
+            $section->is_deleted = 1;
+            $section->save();
+            return redirect()->back()->with('success', 'Section deleted successfully');
+        }
+        return redirect()->back()->with('error', 'Section not Found');
+    }
+
+    //get subject
+    function get_subject($class_id)
+    {
+        $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->where('subjects.is_active', 1)->join('teachers', 'subjects.teacher_id', '=', 'teachers.teacher_id')
+            ->select('subjects.*', 'teachers.teacher_name')
+            ->get();
+        if ($subject) {
+            return response()->json(['success' => 'success', 'subject' => $subject], 200);
+        }
+        return response()->json(['error' => 'not found'], 400);
+
+    }
+    //add subject
+
+    function AddSubject(Request $request)
+    {
+        $request->validate([
+            'class_id' => 'required',
+            'subject_name' => 'required|string|max:255',
+            'teacher_id' => 'required',
+            'total_marks' => 'required|numeric',
+            'min_marks' => 'required|numeric',
+
+        ]);
+        $subject = new subject();
+        $subject->sub_id = 'SUBJECT' . rand('100000', '999999');
+        $subject->subject_name = ucwords($request->subject_name);
+        $subject->teacher_id = $request->teacher_id;
+        $subject->total_mark = $request->total_marks;
+        $subject->min_marks = $request->min_marks;
+        $subject->class_id = $request->class_id;
+        $subject->save();
+        return redirect()->back()->with('success', 'Subject added successfully');
+
+    }
+    //update subject
+    function updateSubject(Request $request)
+    {
+
+        $subject = subject::where('sub_id', $request->subject_id)->first();
+        if ($subject) {
+            $subject->subject_name = ucwords($request->subject_name);
+            $subject->teacher_id = $request->teacher_id;
+            $subject->total_mark = $request->total_marks;
+            $subject->min_marks = $request->min_marks;
+            $subject->class_id = $request->class_id;
+            $subject->save();
+            return redirect()->back()->with('success', 'Subject updated successfully');
+        }
+        return redirect()->back()->with('error', 'Subject not Found');
+
+    }
+    //delete subject
+    function DeleteSubject($id)
+    {
+
+        $subject = subject::where('sub_id', $id)->first();
+        if ($subject) {
+            $subject->is_deleted = 1;
+            $subject->save();
+            return redirect()->back()->with('success', 'Subject deleted successfully');
+        }
+        return redirect()->back()->with('error', 'Subject not Found');
+    }
+    //get student session page
+    function get_student_session_page()
+    {
+        $student_session = student_session::where('is_active', 1)->where('is_deleted', 0)->get();
+        return view('Admin.session', compact('student_session'));
+    }
+
+    //add student session
+    function AddSession(Request $request)
+    {
+        $request->validate([
+            'start' => 'required|date',
+            'end' => 'required|date',
+        ]);
+        try {
+            $student_session = new student_session();
+            $student_session->session_id = 'SESSION' . rand('100000', '999999');
+            $student_session->start = $request->start;
+            $student_session->end = $request->end;
+            $student_session->save();
+            return redirect()->back()->with('success', 'Session added successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Session not added ' . $e->getMessage());
+        }
+    }
+
+
+    //update student session
+    function UpdateSession(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required',
+            'start' => 'required|date',
+            'end' => 'required|date',
+        ]);
+        try {
+            $student_session = student_session::where('session_id', $request->session_id)->first();
+            if ($student_session) {
+                $student_session->start = $request->start;
+                $student_session->end = $request->end;
+                $student_session->save();
+                return redirect()->back()->with('success', 'Session updated successfully');
+            }
+            return redirect()->back()->with('error', 'Session not Found');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Session not updated ' . $e->getMessage());
+        }
+    }
+    //delete student session
+    function DeleteSession($id)
+    {
+        try {
+            $student_session = student_session::where('session_id', $id)->first();
+            if ($student_session) {
+                $student_session->is_deleted = 1;
+                $student_session->save();
+                return redirect()->back()->with('success', 'Session deleted successfully');
+            }
+            return redirect()->back()->with('error', 'Session not Found');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Session not deleted ' . $e->getMessage());
+        }
+    }
+
+    // Show Student List
+    function Students()
+    {
+        return view('Admin.manage-students');
+    }
+
+    // get sction data by class id
+    public function getSections($class_id)
+    {
+        $sections = DB::table('sections')->where('class_id', $class_id)->get();
+        return response()->json($sections);
+    }
+    //get student data by class id
+    function get_student($class_id, $section_id)
+    {
+
+
+        $student = student::where('is_active', 1)->where('is_deleted', 0)->where('class_id', $class_id)->where('section_id', $section_id)->get();
+        if ($student) {
+            return response()->json(['success' => 'success', 'student' => $student], 200);
+        } else {
+            return response()->json(['error' => 'student not found'], 400);
+        }
+    }
+
+    //add student
+    function AddStudent(Request $request)
+    {
+
+        $request->validate([
+
+            'student_name' => 'required|string|max:255',
+            'father_name' => 'required|string|max:255',
+            'mother_name' => 'required|string|max:255',
+
+            'documents' => 'nullable|string|max:255',
+
+            'class_id' => 'required|string|max:255',
+            'section_id' => 'required|string|max:255',
+            'dob' => 'required|string|max:255',
+            'gender' => 'required|string|max:255',
+
+            'religion' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'full_postal_address' => 'required|string|max:255',
+            'mobile' => 'required|string|max:255',
+            // 'full_per_address' => 'required|string|max:255',
+            'st_addhar_no' => 'required|string|max:255',
+
+            'previous_school' => 'nullable|string|max:255',
+
+            'addmission_number' => 'required|string|max:255',
+            'addmission_date' => 'required|string|max:255',
+            'profile_image' => 'nullable',
+
+            'option1' => 'required|string|max:255',
+            'option2' => 'required|string|max:255',
+            'optional_documents' => 'nullable|string|max:255',
+            'option3' => 'required|string|max:255',
+            'roll_no' => 'required',
+            'registration_no' => 'required',
+        ]);
+
+        $student = new student();
+
+        $student->student_id = 'STUDENT' . rand('100000', '999999');
+        $student->student_name = $request->input('student_name');
+        $student->father_name = $request->input('father_name');
+        $student->mother_name = $request->input('mother_name');
+
+        $student->documents = $request->input('documents');
+
+
+        $student->class_id = $request->input('class_id');
+        $student->section_id = $request->input('section_id');
+        $student->dob = $request->input('dob');
+        $student->gender = $request->input('gender');
+        // $student->weight = $request->input('weight');
+        // $student->height = $request->input('height');
+        $student->religion = $request->input('religion');
+        $student->category = $request->input('category');
+        $student->full_postal_address = $request->input('full_postal_address');
+        $student->mobile = $request->input('mobile');
+        // $student->full_per_address = $request->input('full_per_address');
+        // $student->mobile2 = $request->input('mobile2');
+        // $student->area = $request->input('area');
+        // $student->father_occu = $request->input('father_occu');
+        // $student->mother_occu = $request->input('mother_occu');
+        // $student->bpl_no = $request->input('bpl_no');
+        $student->st_addhar_no = $request->input('st_addhar_no');
+        // $student->parent_addhar_no = $request->input('parent_addhar_no');
+        // $student->bank_ac_no = $request->input('bank_ac_no');
+        // $student->ifsc = $request->input('ifsc');
+        // $student->email = $request->input('email');
+        $student->registration_no = $request->input('registration_no');
+        $student->previous_school = $request->input('previous_school');
+        // $student->gardian_full_name = $request->input('gardian_full_name');
+        $student->addmission_number = $request->input('addmission_number');
+        $student->addmission_date = $request->input('addmission_date');
+        $student->session = $request->input('session');
+        $student->adhar_prof = "yes";
+        $student->age_prof = "yes";
+        $student->photo = "yes";
+        $student->roll_no = $request->input('roll_no');
+
+        if ($request->hasFile('profile_image')) {
+            $image = $request->file('profile_image');
+            $imagePath = 'student_img/' . time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('student_img/'), $imagePath);
+            $student->profile_image = $imagePath;
+
+        }
+
+
+        $student->save();
+        return redirect()->back()->with('success', 'Student added successfully');
+
+    }
+    //get update student page
+    function UpdateStudentPage($id)
+    {
+        $student = Student::where('is_active', 1)->where('is_deleted', 0)->where('student_id', $id)->first();
+        return view('Admin.update_student', compact('student'));
+
+    }
+
+    //update student
+    function UpdateStudent(Request $request)
+    {
+        $request->validate([
+
+            'student_id' => 'required',
+            'student_name' => 'required|string|max:255',
+            'father_name' => 'required|string|max:255',
+            'mother_name' => 'required|string|max:255',
+            // 'any_disease' => 'nullable|string|max:255',
+            // 'blood_group' => 'nullable|string|max:255',
+            // 'whether_paralysed' => 'nullable|string|max:255',
+            'documents' => 'nullable|string|max:255',
+            // 'parent_id' => 'required|string|max:255',
+            // 'std_hobby' => 'nullable|string',
+            // 'std_intreted_in' => 'nullable|string',
+            // 'disease' => 'nullable|string|max:255',
+            // 'extra_details' => 'nullable|string',
+            'class_id' => 'required|string|max:255',
+            'section_id' => 'required|string|max:255',
+            'dob' => 'required|string|max:255',
+            'gender' => 'required|string|max:255',
+            // 'weight' => 'nullable|string|max:255',
+            // 'height' => 'nullable|string|max:255',
+            'religion' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'full_postal_address' => 'required|string|max:255',
+            'mobile' => 'required|string|max:255',
+            // 'full_per_address' => 'required|string|max:255',
+            // 'mobile2' => 'nullable|string|max:255',
+            // 'area' => 'required|string|max:255',
+            // 'father_occu' => 'nullable|string|max:255',
+            // 'mother_occu' => 'nullable|string|max:255',
+            // 'bpl_no' => 'required|string|max:255',
+            'st_addhar_no' => 'required|string|max:255',
+            // 'parent_addhar_no' => 'required|string|max:255',
+            // 'bank_ac_no' => 'required|string|max:255',
+            // 'ifsc' => 'required|string|max:255',
+            // 'email' => 'nullable|string|max:255',
+            // 'lang_at_home' => 'nullable|string|max:255',
+            'previous_school' => 'nullable|string|max:255',
+            // 'gardian_full_name' => 'required|string|max:255',
+            'addmission_number' => 'required|string|max:255',
+            'addmission_date' => 'required|string|max:255',
+            'profile_image' => 'nullable',
+            'option1' => 'required|string|max:255',
+            'option2' => 'required|string|max:255',
+            'optional_documents' => 'nullable|string|max:255',
+            'option3' => 'required|string|max:255',
+            'roll_no' => 'required',
+            'registration_number' => 'required',
+
+        ]);
+        $student = student::where('is_active', 1)->where('is_deleted', 0)->where('student_id', $request->student_id)->first();
+        $student->student_name = $request->input('student_name');
+        $student->father_name = $request->input('father_name');
+        $student->mother_name = $request->input('mother_name');
+        // $student->any_disease = $request->input('any_disease');
+        // $student->blood_group = $request->input('blood_group');
+        // $student->whether_paralysed = $request->input('whether_paralysed');
+        $student->documents = $request->input('documents');
+        // $student->parent_id = $request->input('parent_id');
+        // $student->std_hobby = $request->input('std_hobby');
+        // $student->std_intreted_in = $request->input('std_intreted_in');
+        // $student->disease = $request->input('disease');
+        // $student->extra_details = $request->input('extra_details');
+        $student->class_id = $request->input('class_id');
+        $student->section_id = $request->input('section_id');
+        $student->dob = $request->input('dob');
+        $student->gender = $request->input('gender');
+        // $student->weight = $request->input('weight');
+        // $student->height = $request->input('height');
+        $student->religion = $request->input('religion');
+        $student->category = $request->input('category');
+        $student->full_postal_address = $request->input('full_postal_address');
+        $student->mobile = $request->input('mobile');
+        // $student->full_per_address = $request->input('full_per_address');
+        // $student->mobile2 = $request->input('mobile2');
+        // $student->area = $request->input('area');
+        // $student->father_occu = $request->input('father_occu');
+        // $student->mother_occu = $request->input('mother_occu');
+        // $student->bpl_no = $request->input('bpl_no');
+        $student->st_addhar_no = $request->input('st_addhar_no');
+        // $student->parent_addhar_no = $request->input('parent_addhar_no');
+        // $student->bank_ac_no = $request->input('bank_ac_no');
+        // $student->ifsc = $request->input('ifsc');
+        // $student->email = $request->input('email');
+        // $student->lang_at_home = $request->input('lang_at_home');
+
+        $student->previous_school = $request->input('previous_school');
+        // $student->gardian_full_name = $request->input('gardian_full_name');
+        $student->addmission_number = $request->input('addmission_number');
+        $student->addmission_date = $request->input('addmission_date');
+        $student->session = $request->input('session');
+        $student->adhar_prof = "yes";
+        $student->age_prof = "yes";
+        $student->photo = "yes";
+        $student->roll_no = $request->input('roll_no');
+        $student->registration_no = $request->input('registration_number');
+
+        if ($request->hasFile('profile_image')) {
+            $image = $request->file('profile_image');
+            $imagePath = 'student_img/' . time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('student_img/'), $imagePath);
+            $student->profile_image = $imagePath;
+        }
+        $student->save();
+        return redirect()->back()->with('success', 'Student added successfully');
+    }
+    //view student details
+    public function ViewStudentDetails($id)
+    {
+        $student = Student::where('is_active', 1)->where('is_deleted', 0)->where('student_id', $id)->first();
+        return view('Admin.view_student_details', compact('student'));
+    }
+
+    //delete student
+    function DeleteStudent($id)
+    {
+        $student = Student::where('is_active', 1)->where('is_deleted', 0)->where('student_id', $id)->first();
+        if ($student) {
+            $student->is_deleted = 1;
+            $student->save();
+            return redirect()->back()->with('success', 'Student deleted successfully');
+        }
+        return redirect()->back()->with('error', 'Student not Found');
+    }
+
+
+    /*---------------------------------Marksheet Module Starts Here -------------------------------*/
+    function get_marksheet($class_id, $section_id, $session, $term)
+    {
+        $class = Classes::where('class_id', $class_id)->where('is_active', 1)->where('is_deleted', 0)->first();
+        $section = Section::where('class_id', $class_id)->where('sec_id', $section_id)->where('is_active', 1)->where('is_deleted', 0)->first();
+        $subject = Subject::where('class_id', $class_id)->where('is_active', 1)->where('is_deleted', 0)->get();
+
+        $student = Student::where('students.is_active', 1)
+            ->where('students.is_deleted', 0)
+            ->where('students.class_id', $class_id)
+            ->where('section_id', $section_id)
+            ->join('class', 'class.class_id', '=', 'students.class_id')
+            ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+            ->whereNotExists(function ($query) use ($class_id, $session, $term) {
+                $query->select(DB::raw(1))
+                    ->from('marks')
+                    ->whereRaw('marks.student_id = students.student_id')
+                    ->where('marks.class_id', $class_id)
+                    ->where('marks.session', $session)
+                    ->where('marks.term', $term);
+            })
+            ->get();
+
+        return response()->json(['success' => 'success', 'class' => $class, 'section' => $section, 'subject' => $subject, 'student' => $student], 200);
+    }
+
+
+    // add marks 
+    public function AddMarksheet(Request $request)
+    {
+        $formData = $request->all(); // Get all form data
+
+        $term = $formData['term'] ?? null;
+        $session = $formData['session'] ?? null;
+        $classId = $formData['class_id'] ?? null;
+        $sectionId = $formData['section_id'] ?? null;
+
+        // Remove general data to isolate student data
+        $generalDataKeys = ['_token', 'term', 'session', 'class_id', 'section_id'];
+        $studentData = array_diff_key($formData, array_flip($generalDataKeys));
+        $subject = Subject::where('class_id', $classId)->where('subjects.is_deleted', 0)->get();
+        $total_subject = 0;
+        foreach ($subject as $sub) {
+            if ($sub->subject_name == 'Attendance' || $sub->subject_name == 'ATTENDANCE' || $sub->subject_name == 'Attendance (No Marks)' || $sub->subject_name == 'ATTENDANCE (NO MARKS)' || $sub->subject_name == 'attendance') {
+
+            } else {
+                $total_subject += (int) $sub->total_mark;
+            }
+
+        }
+
+
+        $studentsData = [];
+
+        // Organize data by student IDs
+        foreach ($studentData as $key => $value) {
+
+            if (preg_match('/STUDENT(\d+)_/', $key, $matches)) {
+                $studentId = 'STUDENT' . $matches[1];
+                $subject = str_replace($studentId . '_', '', $key);
+
+                // Initialize student data array if not already set
+                if (!isset($studentsData[$studentId])) {
+                    $studentsData[$studentId] = [
+                        'marks' => [],
+                        'additionalData' => [],
+                        'attendances' => [],
+                    ];
+                }
+
+
+
+                if ($subject == 'pol' || $subject == 'party' || $subject == 'work' || $subject == 'home' || $subject == 'punch' || $subject == 'test' || $subject == 'is_neet' || $subject == 'response') {
+
+                    $studentsData[$studentId]['additionalData'][$subject] = trim($value);
+
+                } else if ($subject == 'attendance') {
+                    $studentsData[$studentId]['attendances'][$subject] = trim($value);
+                } else {
+                    // Add mark to student data
+                    $studentsData[$studentId]['marks'][$subject] = trim($value);
+                }
+            }
+        }
+
+        if ((!empty($studentsData))) {
+            foreach ($studentsData as $studentId => $studentData) {
+                $marks = $studentData['marks'] ?? [];
+                $additionalData = $studentData['additionalData'] ?? [];
+                $attendances = $studentData['attendances'] ?? [];
+                $totalMarks = 0;
+                $percentage = 0;
+                foreach ($marks as $subject => $mark) {
+                    if ($subject == 'Attendance' || $subject == 'ATTENDANCE' || $subject == 'Attendance (No Marks)' || $subject == 'ATTENDANCE (NO MARKS)' || $subject == 'attendance') {
+                    } else {
+                        $totalMarks += (int) $mark;
+                    }
+                }
+
+
+                $percentage = $totalMarks / $total_subject * 100;
+
+                $markDB = marks::where('marks.student_id', $studentId)->where('marks.term', $term)->first();
+
+                if (!$markDB) {
+                    marks::create([
+                        'mark_id' => 'MARK' . rand(0000000, 999999),
+                        'student_id' => $studentId,
+                        'session' => $session,
+                        'class_id' => $classId,
+                        'section_id' => $sectionId,
+                        'term' => $term,
+                        'marks' => json_encode($marks),
+                        'personal_dev' => json_encode($additionalData),
+                        'total' => $totalMarks,
+                        'percentage' => $percentage,
+                        'attendance' => json_encode($attendances),
+                    ]);
+                } else {
+                    // Update existing marks and additionalData arrays here
+                }
+            }
+        }
+
+        return response()->json(['success' => 'Marks added successfully',], 200);
+    }
+
+
+
+
+
+    //view marksheet details
+    function view_marksheet()
+    {
+        return view('Admin.view_marks');
+    }
+
+    //edit marksheet
+    function show_edit_page()
+    {
+        return view('Admin.update_marks');
+    }
+
+
+    //get marksheet data for edit
+    function get_marks_data($class_id, $section_id, $session, $term)
+    {
+        if ($term == 'final') {
+            $term1 = 'term-1';
+            $term2 = 'term-2';
+
+            $markterm1 = marks::where('marks.class_id', $class_id)->where('marks.section_id', $section_id)->where('marks.session', $session)->where('marks.term', $term1)->orderBy('marks.total', 'desc')->get();
+            $markterm2 = marks::where('marks.class_id', $class_id)->where('marks.section_id', $section_id)->where('marks.session', $session)->where('marks.term', $term2)->orderBy('marks.total', 'desc')->get();
+            $markterm3 = marks::where('marks.class_id', $class_id)->where('marks.section_id', $section_id)->where('marks.session', $session)->where('marks.term', $term)->orderBy('marks.total', 'desc')->get();
+            $commonStudentIds = $markterm1->pluck('student_id')->intersect($markterm2->pluck('student_id'))->intersect($markterm3->pluck('student_id'));
+
+            // Filter the results to only include students with data in all three terms
+            $markterm1 = $markterm1->whereIn('student_id', $commonStudentIds);
+            $markterm2 = $markterm2->whereIn('student_id', $commonStudentIds);
+            $markterm3 = $markterm3->whereIn('student_id', $commonStudentIds);
+
+            // Rest of the code remains the same
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+
+            if ($markterm1 && $markterm2 && $markterm3) {
+
+                $result = [];
+                foreach ($markterm1 as $mark1) {
+                    $student_id = $mark1->student_id;
+                    $term1_total = $mark1->total;
+                    $student = Student::where('student_id', $student_id)->first();
+                    $classs = Classes::where('class_id', $mark1->class_id)->first();
+                    $section = Section::where('sec_id', $mark1->section_id)->first();
+                    $student_name = $student->student_name;
+                    $section_name = $section->section_name;
+                    $class_name = $classs->class_name;
+
+
+
+                    $dat1 = $markterm2->where('student_id', $student_id)->first();
+                    $term2_total = $dat1->total;
+
+                    $data2 = $markterm3->where('student_id', $student_id)->first();
+                    $final_total = $data2->total;
+
+                    $total_marks = $term1_total + $term2_total + $final_total;
+
+                    // Group by student_id
+                    $result[$student_id] = [
+                        'student_id' => $student_id,
+                        'total_marks' => $total_marks,
+                        'subject' => $subject,
+                        'student_name' => $student_name,
+                        'class_name' => $class_name,
+                        'section_name' => $section_name,
+                        'roll_no' => $mark1->roll_no,
+                        'attendance' => $mark1->attendance,
+                    ];
+                }
+
+                // Sort by total marks in descending order
+                uasort($result, function ($a, $b) {
+                    return $b['total_marks'] <=> $a['total_marks'];
+                });
+
+                return response()->json(['success' => 'success', 'result' => $result,], 200);
+                // $mark = $markterm1;
+                // return response()->json(['success' => 'success', 'mark' => $mark, 'subject' => $subject], 200);
+            }
+        } else {
+            $mark = marks::where('marks.class_id', $class_id)->where('marks.section_id', $section_id)->where('marks.session', $session)->where('marks.term', $term)->orderBy('marks.total', 'desc')->get();
+            $arr[] = '';
+            foreach ($mark as $mark2) {
+                $data = Student::where('student_id', $mark2->student_id)->first();
+                $class = Classes::where('class_id', $mark2->class_id)->first();
+                $section = Section::where('sec_id', $mark2->section_id)->first();
+                $mark2->section = $section;
+                $mark2->data = $data;
+                $mark2->class = $class;
+            }
+
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+            return response()->json(['success' => 'success', 'mark' => $mark, 'subject' => $subject], 200);
+        }
+
+
+    }
+    //get all marksheet data for with decoded data
+    function get_all_marks_data($class_id, $section_id, $session, $term)
+    {
+        // $mark = marks::where('marks.class_id', $class_id)->where('marks.section_id', $section_id)->where('marks.session', $session)->where('marks.term', $term)->join('students', 'students.student_id', '=', 'marks.student_id')->join('class', 'class.class_id', '=', 'students.class_id')->join('sections', 'sections.sec_id', '=', 'students.section_id')->get();
+        // $subject = subject::where('class_id', $class_id)->get();
+        // $allMarkData = json_decode(json_encode($mark), true);
+
+        // $mark->transform(function ($item) {
+        //     $item->marks = json_decode($item->marks, true);
+        //     return $item;
+        // });
+        // return response()->json(['success' => 'success', 'allMarkData' => $allMarkData, 'subject' => $subject, 'mark' => $mark], 200);
+
+        $mark = marks::where('marks.class_id', $class_id)->where('marks.section_id', $section_id)->where('marks.session', $session)->where('marks.term', $term)
+            // ->join('students', 'students.student_id', '=', 'marks.student_id')
+            // ->join('class', 'class.class_id', '=', 'students.class_id')
+            // ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+            ->orderBy('marks.total', 'desc')
+            ->get();
+        foreach ($mark as $st) {
+            $classs = Classes::where('class_id', $st->class_id)->first();
+            $section = Section::where('sec_id', $st->section_id)->first();
+            $student = Student::where('student_id', $st->student_id)->first();
+            $st->student_name = $student->student_name;
+            $st->class_name = $classs->class_name;
+            $st->section_name = $section->section_name;
+            $st->father_name = $student->father_name;
+            $st->dob = $student->dob;
+            $st->registration_no = $student->registration_no;
+            $st->roll_no = $student->roll_no;
+        }
+        $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+
+        $allMarkData = json_decode(json_encode($mark), true);
+
+        $mark->transform(function ($item) {
+
+            $item->marks = json_decode($item->marks, true);
+            $item->personal_dev = json_decode($item->personal_dev, true);
+            $item->attendance = json_decode($item->attendance, true);
+
+            // Decode personal_dev data
+            return $item;
+        });
+
+
+
+
+
+        return response()->json(['success' => 'success', 'allMarkData' => $allMarkData, 'subject' => $subject, 'mark' => $mark], 200);
+        // }
+    }
+
+    function save_data(Request $request)
+    {
+        $formData = $request->all(); // Get all form data
+
+        $term = $formData['term'] ?? null;
+        $session = $formData['session'] ?? null;
+        $classId = $formData['class_id'] ?? null;
+        $sectionId = $formData['section_id'] ?? null;
+
+        // Remove general data to isolate student data
+        $generalDataKeys = ['_token', 'term', 'session', 'class_id', 'section_id'];
+        $studentData = array_diff_key($formData, array_flip($generalDataKeys));
+
+        $studentsData = [];
+        $subject = Subject::where('class_id', $classId)->where('subjects.is_deleted', 0)->get();
+        $total_subject = 0;
+        foreach ($subject as $sub) {
+            if ($sub->subject_name == 'Attendance' || $sub->subject_name == 'ATTENDANCE' || $sub->subject_name == 'Attendance (No Marks)' || $sub->subject_name == 'ATTENDANCE (NO MARKS)' || $sub->subject_name == 'attendance') {
+
+            } else {
+                $total_subject += (int) $sub->total_mark;
+            }
+
+        }
+
+        // Organize data by student IDs
+        foreach ($studentData as $key => $value) {
+            if (preg_match('/STUDENT(\d+)_/', $key, $matches)) {
+                $studentId = 'STUDENT' . $matches[1];
+                $subject = str_replace($studentId . '_', '', $key);
+
+                // Initialize student data array if not already set
+                if (!isset($studentsData[$studentId])) {
+                    $studentsData[$studentId] = [
+                        'marks' => [],
+                        'additionalData' => [],
+                        'attendances' => [],
+                    ];
+                }
+
+                if ($subject == 'pol' || $subject == 'party' || $subject == 'work' || $subject == 'home' || $subject == 'punch' || $subject == 'test' || $subject == 'is_neet' || $subject == 'response') {
+
+                    $studentsData[$studentId]['additionalData'][$subject] = trim($value);
+
+                } else
+                    if ($subject == 'attendance') {
+                        $studentsData[$studentId]['attendances'][$subject] = trim($value);
+                    } else {
+                        // Add mark to student data
+                        $studentsData[$studentId]['marks'][$subject] = trim($value);
+                    }
+            }
+        }
+
+        if ((!empty($studentsData))) {
+            foreach ($studentsData as $studentId => $studentData) {
+                $marks = $studentData['marks'] ?? [];
+                $additionalData = $studentData['additionalData'] ?? [];
+                $attendances = $studentData['attendances'] ?? [];
+                $totalMarks = 0;
+                $percentage = 0;
+                foreach ($marks as $subject => $mark) {
+                    if ($subject == 'Attendance' || $subject == 'ATTENDANCE' || $subject == 'Attendance (No Marks)' || $subject == 'ATTENDANCE (NO MARKS)' || $subject == 'attendance') {
+                    } else {
+                        $totalMarks += (int) $mark;
+                    }
+                }
+
+
+                $percentage = $totalMarks / $total_subject * 100;
+                $markDB = marks::where('marks.student_id', $studentId)->where('marks.term', $term)->first();
+
+                if (!$markDB) {
+                    marks::create([
+                        'mark_id' => 'MARK' . rand(0000000, 999999),
+                        'student_id' => $studentId,
+                        'session' => $session,
+                        'class_id' => $classId,
+                        'section_id' => $sectionId,
+                        'term' => $term,
+                        'marks' => json_encode($marks),
+                        'personal_dev' => json_encode($additionalData),
+                        'total' => $totalMarks,
+                        'percentage' => $percentage,
+                        'attendance' => json_encode($attendances),
+                    ]);
+                } else {
+                    // Update existing marks and additionalData arrays
+                    $markDB->marks = json_encode($marks);
+                    $markDB->personal_dev = json_encode($additionalData);
+                    $markDB->attendance = json_encode($attendances);
+
+                    $markDB->total = $totalMarks;
+                    $markDB->percentage = $percentage;
+                    $markDB->save();
+                }
+            }
+        }
+
+        return response()->json(['success' => 'Marks added successfully',], 200);
+    }
+    //get view final data for marksheet
+    function get_view_marks_data($class_id, $section_id, $session, $term, $student_id)
+    {
+        if ($term == 'final') {
+            $term1 = 'term-1';
+            $term2 = 'term-2';
+
+            $mark1 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term1)
+                ->where('students.student_id', $student_id)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+                ->select('marks.*', 'students.*', 'class.*', 'sections.*')
+
+                ->first();
+
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+
+
+
+            $allMarkData1 = json_decode(json_encode($mark1), true);
+            $allMarkData1['attendance'] = json_decode($allMarkData1['attendance'], true);
+
+            $mark1->marks = json_decode($mark1->marks, true);
+
+            $mark1->personal_dev = json_decode($mark1->personal_dev, true);
+
+            $mark2 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term2)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+                ->where('students.student_id', $student_id)
+                ->first();
+
+
+
+
+
+            $allMarkData2 = json_decode(json_encode($mark2), true);
+
+
+            $mark2->marks = json_decode($mark2->marks, true);
+            $mark2->personal_dev = json_decode($mark2->personal_dev, true);
+            $mark3 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+                ->where('students.student_id', $student_id)
+                ->first();
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+
+
+
+
+            $allMarkData3 = json_decode(json_encode($mark3), true);
+            // $mark3['attendance'] = json_decode($allMarkData3['attendance'], true); 
+            $mark3->attendance = json_decode($allMarkData3['attendance'], true);
+
+
+            $mark3->marks = json_decode($mark3->marks, true);
+            $mark3->personal_dev = json_decode($mark3->personal_dev, true);
+
+            if ($mark1 && $mark2 && $mark3) {
+
+                return response()->json(['success' => 'success', 'allMarkData1' => $allMarkData1, 'allMarkData2' => $allMarkData2, 'allMarkData3' => $allMarkData3, 'subject' => $subject, 'mark1' => $mark1, 'mark2' => $mark2, 'mark3' => $mark3], 200);
+            }
+            return response()->json(['success' => 'success', 'allMarkData1' => $allMarkData1, 'allMarkData2' => $allMarkData2, 'allMarkData3' => $allMarkData3, 'subject' => $subject, 'mark1' => $mark1, 'mark2' => $mark2, 'mark3' => $mark3], 200);
+
+        } else {
+            $mark = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+                ->where('students.student_id', $student_id)
+                ->first();
+
+            $allMarkData = json_decode(json_encode($mark), true);
+            $allMarkData['attendance'] = json_decode($allMarkData['attendance'], true);
+
+
+
+            $mark->marks = json_decode($mark->marks, true);
+            $mark->personal_dev = json_decode($mark->personal_dev, true);
+
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+
+            return response()->json(['success' => 'success', 'mark' => $mark, 'subject' => $subject, 'allMarkData' => $allMarkData], 200);
+        }
+    }
+
+    // Get final marks data for marksheet
+    function get_final_marks_data($class_id, $section_id, $session, $term)
+    {
+        if ($term == 'final') {
+            $term1 = 'term-1';
+            $term2 = 'term-2';
+
+            $mark1 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term1)
+
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+                ->select('marks.*', 'students.*', 'class.*', 'sections.*')
+
+                ->get();
+
+
+            $allMarkData1 = json_decode(json_encode($mark1), true);
+
+            $mark1->marks = json_decode($mark1->marks, true);
+
+            $mark1->personal_dev = json_decode($mark1->personal_dev, true);
+
+            $mark2 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term2)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+
+                ->get();
+
+            $allMarkData2 = json_decode(json_encode($mark2), true);
+
+
+            $mark2->marks = json_decode($mark2->marks, true);
+            $mark2->personal_dev = json_decode($mark2->personal_dev, true);
+            $mark3 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+
+                ->get();
+
+            $allMarkData3 = json_decode(json_encode($mark3), true);
+
+
+            $mark3->marks = json_decode($mark3->marks, true);
+            $mark3->personal_dev = json_decode($mark3->personal_dev, true);
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+            if ($mark1 && $mark2 && $mark3) {
+
+                return response()->json(['success' => 'success', 'allMarkData1' => $allMarkData1, 'allMarkData2' => $allMarkData2, 'allMarkData3' => $allMarkData3, 'subject' => $subject, 'mark1' => $mark1, 'mark2' => $mark2, 'mark3' => $mark3], 200);
+            }
+            return response()->json(['success' => 'success', 'allMarkData1' => $allMarkData1, 'allMarkData2' => $allMarkData2, 'allMarkData3' => $allMarkData3, 'subject' => $subject, 'mark1' => $mark1, 'mark2' => $mark2, 'mark3' => $mark3], 200);
+
+        }
+    }
+    //get full marks data for marksheet print alll
+    function get_full_marks_data($class_id, $section_id, $session, $term)
+    {
+        if ($term == 'final') {
+            $term1 = 'term-1';
+            $term2 = 'term-2';
+
+            $mark1 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term1)
+
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+                ->select('marks.*', 'students.*', 'class.*', 'sections.*')
+
+                ->get();
+
+            $subject = subject::where('class_id', $class_id)->where('subjects.is_deleted', 0)->get();
+
+
+
+            $mark1->transform(function ($item) {
+                $item->marks = json_decode($item->marks, true);
+                $item->personal_dev = json_decode($item->personal_dev, true);
+                $item->attendance = json_decode($item->attendance, true);
+                // Decode personal_dev data
+                return $item;
+            });
+            // $allMarkData1 = json_decode(json_encode($mark1), true);
+
+            // $mark1->marks = json_decode($mark1->marks, true);
+
+            // $mark1->personal_dev = json_decode($mark1->personal_dev, true);
+
+            $mark2 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term2)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+
+                ->get();
+            // $subject = subject::where('class_id', $class_id)->get();
+
+
+            $mark2->transform(function ($item) {
+                $item->marks = json_decode($item->marks, true);
+                $item->personal_dev = json_decode($item->personal_dev, true);
+                $item->attendance = json_decode($item->attendance, true);
+                // Decode personal_dev data
+                return $item;
+            });
+
+            // $allMarkData2 = json_decode(json_encode($mark2), true);
+
+
+            // $mark2->marks = json_decode($mark2->marks, true);
+            // $mark2->personal_dev = json_decode($mark2->personal_dev, true);
+            $mark3 = marks::where('marks.class_id', $class_id)
+                ->where('marks.section_id', $section_id)
+                ->where('marks.session', $session)
+                ->where('marks.term', $term)
+                ->join('students', 'students.student_id', '=', 'marks.student_id')
+                ->join('class', 'class.class_id', '=', 'students.class_id')
+                ->join('sections', 'sections.sec_id', '=', 'students.section_id')
+
+                ->get();
+            // $subject = subject::where('class_id', $class_id)->get();
+
+
+
+            $mark3->transform(function ($item) {
+                $item->marks = json_decode($item->marks, true);
+                $item->personal_dev = json_decode($item->personal_dev, true);
+                $item->attendance = json_decode($item->attendance, true);
+                // Decode personal_dev data
+                return $item;
+            });
+            // $allMarkData3 = json_decode(json_encode($mark3), true);
+
+
+            // $mark3->marks = json_decode($mark3->marks, true);
+            // $mark3->personal_dev = json_decode($mark3->personal_dev, true);
+            // $subject = subject::where('class_id', $class_id)->get();
+            $commonStudentIds = $mark1->pluck('student_id')->intersect($mark2->pluck('student_id'))->intersect($mark3->pluck('student_id'));
+            $mark1 = $mark1->filter(function ($item) use ($commonStudentIds) {
+                return $commonStudentIds->contains($item->student_id);
+            });
+
+            $mark2 = $mark2->filter(function ($item) use ($commonStudentIds) {
+                return $commonStudentIds->contains($item->student_id);
+            });
+
+            $mark3 = $mark3->filter(function ($item) use ($commonStudentIds) {
+                return $commonStudentIds->contains($item->student_id);
+            });
+
+            $mergedMarks = $mark1->keyBy('student_id')->map(function ($item) use ($mark2, $mark3) {
+                $term2 = $mark2->where('student_id', $item->student_id)->first();
+                $term3 = $mark3->where('student_id', $item->student_id)->first();
+
+                $item->mark1 = $item->marks;
+                $item->personaldev1 = $item->personal_dev;
+                $item->total1 = $item->total; // retrieve total from the database
+                $item->percentage1 = $item->percentage; // retrieve percentage from the database
+
+                $item->mark2 = $term2->marks;
+                $item->personaldev2 = $term2->personal_dev;
+                $item->total2 = $term2->total; // retrieve total from the database
+                $item->percentage2 = $term2->percentage; // retrieve percentage from the database
+
+                $item->mark3 = $term3->marks;
+                $item->personaldev3 = $term3->personal_dev;
+                $item->total3 = $term3->total; // retrieve total from the database
+                $item->percentage3 = $term3->percentage;
+                $item->attendance3 = $term3->attendance;
+
+                // retrieve percentage from the database
+
+                unset($item->marks);
+                unset($item->personal_dev);
+                unset($item->total); // unset the original total column
+                unset($item->percentage); // unset the original percentage column
+
+                return $item;
+            });
+            return response()->json(['success' => 'success', 'subject' => $subject, 'marks' => $mergedMarks, 'mark1' => $mark1], 200);
+        }
+    }
+    /*---------------------------------Marksheet Module Ends Here -------------------------------*/
+
+
+    /*---------------------------------Fee Module Starts Here -------------------------------*/
+    //Show fee page
+    function show_add_fee()
+    {
+        return view('Admin.add_fee_by_class');
+    }
+    //get fee data by class id
+    function get_fee($class_id)
+    {
+        $fee = fee::where('is_active', 1)->where('is_deleted', 0)->where('class_id', $class_id)->get();
+        return response()->json(['success' => 'success', 'fee' => $fee], 200);
+    }
+    // add fee by class
+    function AddFee(Request $request)
+    {
+        $request->validate([
+            'class_id' => 'required',
+            'fee_name' => 'required|string|max:255',
+            'fee_amount' => 'required|numeric',
+
+        ]);
+        try {
+            $fee = new fee;
+            $fee->fee_id = 'FEE' . rand('100000', '999999');
+            $fee->class_id = $request->class_id;
+            $fee->fee_name = trim(ucwords($request->fee_name));
+            $fee->fee_amount = trim($request->fee_amount);
+
+            $fee->save();
+            return redirect()->back()->with('success', 'Fee added successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Fee not added ' . $e->getMessage());
+        }
+    }
+    //update fee
+    function UpdateFee(Request $request)
+    {
+        $request->validate([
+            'fee_id' => 'required',
+            'class_id' => 'required',
+            'fee_name' => 'required|string|max:255',
+            'fee_amount' => 'required|numeric',
+
+        ]);
+
+        $fee = fee::where('fee_id', $request->fee_id)->first();
+        if ($fee) {
+            $fee->class_id = $request->class_id;
+            $fee->fee_name = trim(ucwords($request->fee_name));
+            $fee->fee_amount = trim($request->fee_amount);
+
+            $fee->save();
+            return redirect()->back()->with('success', 'Fee updated successfully');
+        }
+        return redirect()->back()->with('error', 'Fee not Found');
+    }
+    //delete fee 
+    function DeleteFee($id)
+    {
+        try {
+            $fee = fee::where('fee_id', $id)->first();
+            if ($fee) {
+                $fee->is_deleted = 1;
+                $fee->save();
+                return redirect()->back()->with('success', 'Fee deleted successfully');
+            }
+            return redirect()->back()->with('error', 'Fee not Found');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Fee not found ' . $e->getMessage());
+        }
+
+    }
+    //collect fee
+    function collect_fee()
+    {
+        return view('Admin.collect-fee');
+    }
+    //get Student Detail for collect fee
+    function get_student_detail_collect_fee($class_id, $section_id, $student_id)
+    {
+        $student = student::where('students.is_active', 1)->where('students.is_deleted', 0)->where('students.class_id', $class_id)->where('students.section_id', $section_id)->where('students.student_id', $student_id)->join('class', 'class.class_id', '=', 'students.class_id')->join('sections', 'sections.sec_id', '=', 'students.section_id')->first();
+        return response()->json(['success' => 'success', 'student' => $student], 200);
+    }
+    function get_collect_fee_details($class_id)
+    {
+        $fee = fee::where('fee.is_active', 1)->where('fee.is_deleted', 0)->where('fee.class_id', $class_id)->get();
+        if ($fee->count()) {
+            return response()->json(['success' => 'success', 'fee' => $fee], 200);
+
+        }
+        return response()->json(['error' => 'fee not found'], 400);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //get data for admit card
+    function get_data_for_admit_card($class_id, $section_id, $session)
+    {
+        $student = student::where('students.is_active', 1)->where('students.is_deleted', 0)->where('students.class_id', $class_id)->where('students.section_id', $section_id)->where('students.session', $session)->join('class', 'class.class_id', '=', 'students.class_id')->join('sections', 'sections.sec_id', '=', 'students.section_id')->get();
+        return response()->json(['success' => 'success', 'student' => $student], 200);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}

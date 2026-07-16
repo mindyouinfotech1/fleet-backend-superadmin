@@ -64,12 +64,13 @@ export const createCustomer = async (req, res) => {
     }
 
     // Auto Customer ID
-    const customerId = await generateCode(organizationId, "customer", "CUST");
+    const customerCode = await generateCode(organizationId, "customer", "CUST");
 
     const customer = await Customer.create({
       organizationId,
       customerName,
-      customerId,
+      customerCode,
+      customerId: customerCode,
       phone,
       email,
       country,

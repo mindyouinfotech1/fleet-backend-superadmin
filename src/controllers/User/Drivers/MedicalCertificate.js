@@ -121,6 +121,62 @@ export const createMedicalCertificate = async (req, res) => {
   }
 };
 
+// ================= DELETE SINGLE MEDICAL CERTIFICATE DOCUMENT =================
+
+export const deleteMedicalCertificateDocument = async (req, res) => {
+  try {
+    const { medicalCertificateId, documentId } = req.params;
+
+    // Check Medical Certificate
+    const medicalCertificate =
+      await MedicalCertificate.findById(medicalCertificateId);
+
+    if (!medicalCertificate) {
+      return res.status(404).json({
+        success: false,
+        message: "Medical Certificate not found",
+      });
+    }
+
+    // Check document exists
+    const documentExists = medicalCertificate.certificateUpload.find(
+      (doc) => doc._id.toString() === documentId,
+    );
+
+    if (!documentExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+    }
+
+    // Delete only selected document from array
+    await MedicalCertificate.findByIdAndUpdate(
+      medicalCertificateId,
+      {
+        $pull: {
+          certificateUpload: {
+            _id: documentId,
+          },
+        },
+      },
+      {
+        new: true,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Document deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // ================= UPDATE =================
 
 export const updateMedicalCertificate = async (req, res) => {

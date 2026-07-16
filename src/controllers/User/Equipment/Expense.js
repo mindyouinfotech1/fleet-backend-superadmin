@@ -1,5 +1,7 @@
 import Expense from "../../../models/User/Maintenance/Expense.js";
 import fs from "fs";
+import path from "path";
+
 import { generateCode } from "../../../controllers/generateCode.js";
 
 export const createExpense = async (req, res) => {
@@ -43,6 +45,52 @@ export const createExpense = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteExpenseReceipt = async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+
+    const expense = await Expense.findById(expenseId);
+
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: "Expense not found",
+      });
+    }
+
+    if (!expense.receipt) {
+      return res.status(404).json({
+        success: false,
+        message: "Receipt not found",
+      });
+    }
+
+    // Delete physical file (optional)
+    const filePath = path.join(process.cwd(), expense.receipt);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Remove receipt from database
+    expense.receipt = "";
+    await expense.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Receipt deleted successfully",
+      data: expense,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

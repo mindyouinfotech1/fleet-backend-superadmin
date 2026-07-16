@@ -176,10 +176,57 @@ export const createEquipment = async (req, res) => {
   }
 };
 
+// ================= DELETE SINGLE EQUIPMENT DOCUMENT =================
+
+export const deleteEquipmentDocument = async (req, res) => {
+  try {
+    const { equipmentId, documentId } = req.params;
+
+    // Equipment find
+    const equipment = await Equipment.findById(equipmentId);
+
+    if (!equipment) {
+      return res.status(404).json({
+        success: false,
+        message: "Equipment not found",
+      });
+    }
+
+    // Document find
+    const document = equipment.documents.id(documentId);
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+    }
+
+    // Physical file delete (optional)
+    if (document.documentFile && fs.existsSync(document.documentFile)) {
+      fs.unlinkSync(document.documentFile);
+    }
+
+    // Remove only selected document
+    equipment.documents.pull(documentId);
+
+    await equipment.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Document deleted successfully",
+      data: equipment.documents,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const updateEquipment = async (req, res) => {
   try {
-    console.log("req.body:", req.body);
-    console.log("req.files:", req.files);
     const equipment = await Equipment.findById(req.params.id);
     if (!equipment) {
       return res

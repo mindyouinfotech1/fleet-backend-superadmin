@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   createMaintenanceHistory,
+  deleteMaintenanceInvoice,
   getAllMaintenanceHistory,
   getMaintenanceHistoryByEquipment,
   getMaintenanceHistoryById,
@@ -24,6 +25,11 @@ router.post(
   "/create",
   invoiceUploader.single("invoice_file"),
   createMaintenanceHistory,
+);
+
+router.delete(
+  "/delete-invoice/:maintenanceHistoryId",
+  deleteMaintenanceInvoice,
 );
 
 router.get("/", getAllMaintenanceHistory);

@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   createWorkOrder,
+  deleteWorkOrderDocument,
   getAllWorkOrders,
   getWorkOrderById,
   updateWorkOrder,
@@ -15,11 +16,10 @@ import {
   deleteWorkOrder,
   restoreWorkOrder,
   permanentDeleteWorkOrder,
-} from "../../../controllers/User/Work_Order_Trip/WorkOrder.js";  
+} from "../../../controllers/User/Work_Order_Trip/WorkOrder.js";
 
 import { createUploader } from "../../../middleware/createUploader.js";
 import { UPLOAD_PATHS } from "../../../config/uploadConfig.js";
-
 
 const router = express.Router();
 
@@ -32,7 +32,6 @@ const podUploader = createUploader({
   uploadPath: UPLOAD_PATHS.WORK_ORDER_POD,
   allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],
 });
-
 
 const combinedUploader = createUploader({
   uploadPath: UPLOAD_PATHS.WORK_ORDER_DOCUMENTS, // dono field isi base folder mein save honge
@@ -47,6 +46,11 @@ router.post(
     { name: "pod", maxCount: 10 },
   ]),
   /* protect, */ createWorkOrder,
+);
+
+router.delete(
+  "/delete-document/:workOrderId/:documentId",
+  deleteWorkOrderDocument,
 );
 
 router.get("/", /* protect, */ getAllWorkOrders);

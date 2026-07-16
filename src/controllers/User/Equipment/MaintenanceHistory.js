@@ -151,6 +151,47 @@ export const createMaintenanceHistory = async (req, res) => {
   }
 };
 
+export const deleteMaintenanceInvoice = async (req, res) => {
+  try {
+    const { maintenanceHistoryId } = req.params;
+
+    const maintenanceHistory =
+      await MaintenanceHistory.findById(maintenanceHistoryId);
+
+    if (!maintenanceHistory) {
+      return res.status(404).json({
+        success: false,
+        message: "Maintenance history not found",
+      });
+    }
+
+    if (!maintenanceHistory.invoice_file) {
+      return res.status(404).json({
+        success: false,
+        message: "Invoice file not found",
+      });
+    }
+
+    // remove file path from database
+    maintenanceHistory.invoice_file = null;
+
+    await maintenanceHistory.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Invoice deleted successfully",
+      data: maintenanceHistory,
+    });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const getAllMaintenanceHistory = async (req, res) => {
   try {
     const { organizationId } = req.query;

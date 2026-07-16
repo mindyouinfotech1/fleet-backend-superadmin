@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   createMedicalCertificate,
+  deleteMedicalCertificateDocument,
   getMedicalCertificates,
   getMedicalCertificatesByDriver,
   getMedicalCertificateById,
@@ -26,6 +27,12 @@ router.post(
   upload.array("certificatefile", 5),
   createMedicalCertificate,
 );
+
+router.delete(
+  "/delete-document/:medicalCertificateId/:documentId",
+  deleteMedicalCertificateDocument,
+);
+
 router.get("/", getMedicalCertificates);
 router.get("/driver/:driverId", getMedicalCertificatesByDriver);
 router.get("/:id", getMedicalCertificateById);

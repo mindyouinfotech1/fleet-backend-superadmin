@@ -1,25 +1,24 @@
 import mongoose from "mongoose";
 
 const customerSchema = new mongoose.Schema(
-    {
-      
+  {
     organizationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "BusinessUser",
       required: true,
     },
 
-        customerCode: {
+    customerCode: {
       type: String,
       required: true,
       trim: true,
-        },
-      
+    },
+
     customerName: {
       type: String,
       required: true,
       trim: true,
-        },
+    },
     customerId: {
       type: String,
       required: true,
@@ -27,13 +26,13 @@ const customerSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
 
     email: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
       lowercase: true,
     },
@@ -46,13 +45,13 @@ const customerSchema = new mongoose.Schema(
 
     state: {
       type: String,
-    //   required: true,
+      //   required: true,
       trim: true,
     },
 
     city: {
       type: String,
-    //   required: true,
+      //   required: true,
       trim: true,
     },
 
@@ -65,11 +64,10 @@ const customerSchema = new mongoose.Schema(
       type: String,
       default: "Active",
     },
-
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Customer = mongoose.model("Customer", customerSchema);

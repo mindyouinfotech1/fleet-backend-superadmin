@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import {
   createEquipment,
+  deleteEquipmentDocument,
   getAllEquipment,
   getEquipmentById,
   updateEquipment,
@@ -25,6 +26,11 @@ const upload = createUploader({
 });
 
 router.post("/", upload.array("documents", 20), createEquipment);
+router.delete(
+  "/delete-document/:equipmentId/:documentId",
+  deleteEquipmentDocument,
+);
+
 router.get("/", getAllEquipment);
 router.get("/deleted", getDeletedEquipment);
 router.get("/:id", getEquipmentById);

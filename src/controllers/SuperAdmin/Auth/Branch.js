@@ -4,10 +4,6 @@ import { Branch } from "../../../models/SuperAdmin/Auth/Branch.js";
 import { UPLOAD_PATHS } from "../../../config/uploadConfig.js";
 import { generateCode } from "../../../controllers/generateCode.js";
 
-// ======================
-// Create Branch
-// ======================
-
 export const createBranch = async (req, res) => {
   try {
     const {
@@ -69,6 +65,9 @@ export const createBranch = async (req, res) => {
       status,
     });
 
+    const io = req.app.get("io");
+    if (io) io.emit("branchCreated", branch);
+
     res.status(201).json({
       success: true,
       message: "Branch created successfully.",
@@ -128,6 +127,9 @@ export const updateBranch = async (req, res) => {
 
     await branch.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("branchUpdated", branch);
+
     res.json({
       success: true,
       message: "Branch updated successfully.",
@@ -140,10 +142,6 @@ export const updateBranch = async (req, res) => {
     });
   }
 };
-
-// ======================
-// Get All Branches
-// ======================
 
 export const getAllBranches = async (req, res) => {
   try {
@@ -163,10 +161,6 @@ export const getAllBranches = async (req, res) => {
   }
 };
 
-// ======================
-// Get Branches By Organization
-// ======================
-
 export const getBranchesByOrganization = async (req, res) => {
   try {
     const branches = await Branch.find({
@@ -185,10 +179,6 @@ export const getBranchesByOrganization = async (req, res) => {
     });
   }
 };
-
-// ======================
-// Get Branch By Id
-// ======================
 
 export const getBranchById = async (req, res) => {
   try {
@@ -215,14 +205,6 @@ export const getBranchById = async (req, res) => {
   }
 };
 
-// ======================
-// Update Branch
-// ======================
-
-// ======================
-// Delete Branch (Soft Delete)
-// ======================
-
 export const deleteBranch = async (req, res) => {
   try {
     const branch = await Branch.findById(req.params.id);
@@ -238,6 +220,9 @@ export const deleteBranch = async (req, res) => {
 
     await branch.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("branchDeleted", req.params.id);
+
     res.json({
       success: true,
       message: "Branch deleted successfully.",
@@ -249,10 +234,6 @@ export const deleteBranch = async (req, res) => {
     });
   }
 };
-
-// ======================
-// Update Status
-// ======================
 
 export const updateBranchStatus = async (req, res) => {
   try {
@@ -272,6 +253,9 @@ export const updateBranchStatus = async (req, res) => {
     if (isActive !== undefined) branch.isActive = isActive;
 
     await branch.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("branchStatusChanged", branch);
 
     res.json({
       success: true,

@@ -65,6 +65,10 @@ const workshopSchema = new mongoose.Schema(
       default: "active",
       index: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

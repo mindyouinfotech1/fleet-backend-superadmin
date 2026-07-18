@@ -7,6 +7,7 @@ import {
   getServiceType,
   getServiceTypes,
   changeServiceTypeStatus,
+  restoreServiceType,
 } from "../../../controllers/User/Work_Order_Trip/ServiceType.js";
 
 const router = express.Router();
@@ -22,5 +23,7 @@ router.put("/update/:id", updateServiceType);
 router.patch("/status/:id", changeServiceTypeStatus);
 
 router.delete("/delete/:id", deleteServiceType);
+
+router.patch("/restore/:id", restoreServiceType);
 
 export default router;

@@ -18,7 +18,7 @@ export const createCustomer = async (req, res) => {
       status,
     } = req.body;
 
-    if (!organizationId || !customerName || !phone || !email || !country) {
+    if (!organizationId || !customerName) {
       return res.status(400).json({
         success: false,
         message: "Required fields are missing.",
@@ -36,9 +36,11 @@ export const createCustomer = async (req, res) => {
     }
 
     // Duplicate Email
+
     const emailExists = await Customer.findOne({
       organizationId,
       email,
+      isDeleted: false,
     });
 
     if (emailExists) {
@@ -48,11 +50,11 @@ export const createCustomer = async (req, res) => {
         message: "Customer email already exists.",
       });
     }
-
     // Duplicate Phone
     const phoneExists = await Customer.findOne({
       organizationId,
       phone,
+      isDeleted: false,
     });
 
     if (phoneExists) {
@@ -124,6 +126,7 @@ export const updateCustomer = async (req, res) => {
         organizationId: customer.organizationId,
         email: req.body.email,
         _id: { $ne: id },
+        isDeleted: false,
       });
 
       if (emailExists) {
@@ -142,6 +145,7 @@ export const updateCustomer = async (req, res) => {
         organizationId: customer.organizationId,
         phone: req.body.phone,
         _id: { $ne: id },
+        isDeleted: false,
       });
 
       if (phoneExists) {
@@ -183,6 +187,45 @@ export const updateCustomer = async (req, res) => {
 
 // ================= DELETE CUSTOMER =================
 
+// export const deleteCustomer = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const customer = await Customer.findById(id);
+
+//     if (!customer) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Customer not found.",
+//       });
+//     }
+
+//     await customer.deleteOne();
+
+//     // SOCKET EVENT
+
+//     const io = req.app.get("io");
+
+//     if (io) {
+//       io.emit("customerDeleted", {
+//         _id: id,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Customer deleted successfully.",
+//     });
+//   } catch (error) {
+//     console.error(error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Error deleting customer.",
+//     });
+//   }
+// };
+
 export const deleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -196,21 +239,20 @@ export const deleteCustomer = async (req, res) => {
       });
     }
 
-    await customer.deleteOne();
+    customer.isDeleted = true;
+    customer.deletedAt = new Date();
+    await customer.save();
 
     // SOCKET EVENT
-
     const io = req.app.get("io");
 
     if (io) {
-      io.emit("customerDeleted", {
-        _id: id,
-      });
+      io.emit("customerDeleted", { _id: id });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Customer deleted successfully.",
+      message: "Customer deleted successfully (soft delete).",
     });
   } catch (error) {
     console.error(error);
@@ -222,13 +264,47 @@ export const deleteCustomer = async (req, res) => {
   }
 };
 
+export const restoreCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const customer = await Customer.findByIdAndUpdate(
+      id,
+      { isDeleted: false, deletedAt: null },
+      { new: true },
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found.",
+      });
+    }
+
+    const io = req.app.get("io");
+    if (io) io.emit("customerRestored", customer);
+
+    return res.status(200).json({
+      success: true,
+      message: "Customer restored successfully.",
+      data: customer,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error restoring customer.",
+    });
+  }
+};
+
 // ================= GET SINGLE CUSTOMER =================
 
 export const getCustomer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const customer = await Customer.findById(id);
+    // const customer = await Customer.findById(id);
+    const customer = await Customer.findOne({ _id: id, isDeleted: false });
 
     if (!customer) {
       return res.status(404).json({
@@ -257,9 +333,8 @@ export const getCustomers = async (req, res) => {
 
     const customers = await Customer.find({
       organizationId,
-    }).sort({
-      createdAt: -1,
-    });
+      isDeleted: false,
+    }).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,

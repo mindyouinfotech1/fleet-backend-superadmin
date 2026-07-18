@@ -24,6 +24,9 @@ export const createMaintenance = async (req, res) => {
       ],
     });
 
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceCreated", data);
+
     return res.status(201).json({
       success: true,
       message: "Maintenance created successfully",
@@ -137,6 +140,9 @@ export const updateMaintenance = async (req, res) => {
       { new: true },
     );
 
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceUpdated", updated);
+
     if (!updated) {
       return res.status(404).json({
         success: false,
@@ -166,6 +172,9 @@ export const deleteMaintenance = async (req, res) => {
       { isDeleted: true },
       { new: true },
     );
+
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceDeleted", id);
 
     if (!data) {
       return res.status(404).json({
@@ -226,6 +235,9 @@ export const updateStatus = async (req, res) => {
 
     await maintenance.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceStatusChanged", maintenance);
+
     return res.status(200).json({
       success: true,
       message: "Status updated successfully",
@@ -265,6 +277,9 @@ export const verifyMaintenance = async (req, res) => {
     });
 
     await data.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceVerified", data);
 
     return res.status(200).json({
       success: true,

@@ -1,7 +1,7 @@
 import { DriverLicense } from "../../../models/User/Drivers/DriverLicense.js";
 import { Driver } from "../../../models/User/Drivers/Driver.js";
 import mongoose from "mongoose";
-const EXPIRY_WARNING_DAYS = 7; //  NAYA: kitne din pehle warning chahiye
+const EXPIRY_WARNING_DAYS = 7; 
 
 function calculateLicenseStatus(expiryDate) {
   if (!expiryDate) return "Active"; // ya "Pending" jo bhi default chahiye
@@ -19,9 +19,7 @@ function calculateLicenseStatus(expiryDate) {
 
   return "Active";
 }
-/* =========================
-   CREATE DRIVER LICENSE
-========================= */
+
 export const createDriverLicense = async (req, res) => {
   try {
     const {
@@ -159,9 +157,7 @@ export const updateDriverLicense = async (req, res) => {
   }
 };
 
-// /* =========================
-//    GET ALL LICENSES
-// ========================= */
+
 export const getAllDriverLicenses = async (req, res) => {
   try {
     const { driverId, countryCode, status, organizationId } = req.query;
@@ -194,9 +190,6 @@ export const getAllDriverLicenses = async (req, res) => {
 };
 
 
-/* =========================
-   GET SINGLE LICENSE
-========================= */
 export const getDriverLicenseById = async (req, res) => {
   try {
     const license = await DriverLicense.findOne({
@@ -269,9 +262,7 @@ export const getAllDriverLicensesByDriver = async (req, res) => {
   }
 };
 
-/* =========================
-   SOFT DELETE LICENSE
-========================= */
+
 export const deleteDriverLicense = async (req, res) => {
   try {
     const deleted = await DriverLicense.findOneAndUpdate(
@@ -303,9 +294,6 @@ export const deleteDriverLicense = async (req, res) => {
   }
 };
 
-/* =========================
-   VERIFY LICENSE
-========================= */
 export const verifyDriverLicense = async (req, res) => {
   try {
     const adminId = req.user?._id;
@@ -344,9 +332,7 @@ export const verifyDriverLicense = async (req, res) => {
   }
 };
 
-/* =========================
-   UPDATE STATUS
-========================= */
+
 export const updateLicenseStatus = async (req, res) => {
   try {
     const { status } = req.body;

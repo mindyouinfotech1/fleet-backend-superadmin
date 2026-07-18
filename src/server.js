@@ -28,6 +28,12 @@ import workOrderRoutes from "./routes/User/Work_Order_Trip/WorkOrder.js";
 import customerRoutes from "./routes/User/Work_Order_Trip/Customer.js";
 import serviceTypeRoutes from "./routes/User/Work_Order_Trip/ServiceType.js";
 import maintenanceHistoryRoutes from "./routes/User/Equipment/MaintenanceHistory.js";
+import tripRoutes from "./routes/User/Work_Order_Trip/Trip.js";
+import tripRoute from "./routes/User/Work_Order_Trip/TripRoute.js";
+import hotelRoutes from "./routes/User/Work_Order_Trip/Hotel.js";
+import tripExpenseRoutes from "./routes/User/Work_Order_Trip/Expense.js";
+import inspectionQuestionRoutes from "./routes/User/Work_Order_Trip/EquipmentQuestion.js";
+import ispCategoryRoutes from "./routes/User/Work_Order_Trip/Isp_Category.js";
 
 dotenv.config();
 connectDB();
@@ -66,6 +72,14 @@ app.get("/api/private-file", (req, res) => {
 
 app.use("/api/branches", branchRoutes);
 
+///// Trip Routes
+app.use("/api/trip-routes", tripRoute);
+app.use("/api/trip", tripRoutes);
+app.use("/api/hotels", hotelRoutes);
+app.use("/api/trip-expenses", tripExpenseRoutes);
+app.use("/api/inspection-questions", inspectionQuestionRoutes);
+app.use("/api/isp-categories", ispCategoryRoutes);
+
 // WORK ORDER ROUTES
 app.use("/api/work-orders", workOrderRoutes);
 app.use("/api/customer", customerRoutes);
@@ -73,6 +87,7 @@ app.use("/api/service-type", serviceTypeRoutes);
 
 app.use("/api/fleet-user", fleetUserAuthRoutes);
 app.use("/api/fleet-sub-admin", fleetSubAdminRoutes);
+
 //  User Routes
 app.use("/api/email-otp", emailOtpRoutes);
 app.use("/api/auth", forgetpassRoutes);

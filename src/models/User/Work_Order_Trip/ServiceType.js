@@ -8,18 +8,18 @@ const serviceTypeSchema = new mongoose.Schema(
       required: true,
     },
 
-        serviceTypeCode: {
+    serviceTypeCode: {
       type: String,
       required: true,
       trim: true,
-        },
+    },
 
     ServiceTypeId: {
       type: String,
       required: true,
       trim: true,
-        }, 
-    
+    },
+
     serviceTypeName: {
       type: String,
       required: true,
@@ -62,6 +62,8 @@ const serviceTypeSchema = new mongoose.Schema(
       //   enum: ["Active", "Inactive"],
       default: "Active",
     },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

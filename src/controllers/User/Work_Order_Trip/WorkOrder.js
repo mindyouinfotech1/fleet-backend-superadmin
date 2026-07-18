@@ -67,6 +67,9 @@ export const createWorkOrder = async (req, res) => {
 
     const workOrder = await WorkOrder.create(payload);
 
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderCreated", workOrder);
+
     return sendResponse(
       res,
       201,
@@ -76,7 +79,6 @@ export const createWorkOrder = async (req, res) => {
     );
   } catch (error) {
     console.error("createWorkOrder error:", error);
-    // agar DB save fail ho jaye to uploaded files disk se clean kar dein
     if (req.files?.documents?.length)
       deleteFilesFromDisk(mapUploadedFiles(req.files.documents));
     if (req.files?.pod?.length)
@@ -89,7 +91,6 @@ export const createWorkOrder = async (req, res) => {
     );
   }
 };
-
 
 export const deleteWorkOrderDocument = async (req, res) => {
   try {
@@ -126,6 +127,9 @@ export const deleteWorkOrderDocument = async (req, res) => {
     workOrder.documents.pull(documentId);
 
     await workOrder.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderUpdated", workOrder);
 
     return res.status(200).json({
       success: true,
@@ -249,11 +253,6 @@ export const getWorkOrderById = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update Work Order (general fields)
- * @route   PUT /api/work-orders/:id
- * @access  Private
- */
 export const updateWorkOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -331,7 +330,9 @@ export const updateWorkOrder = async (req, res) => {
       { new: true, runValidators: true },
     );
 
-    // Purani files ko disk se remove karein sirf jab naye files successfully save ho gaye ho
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderUpdated", workOrder);
+
     if (req.files?.documents?.length && existingWorkOrder.documents?.length) {
       deleteFilesFromDisk(existingWorkOrder.documents);
     }
@@ -361,11 +362,6 @@ export const updateWorkOrder = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update only Work Status (Pending / In Progress / Completed etc.)
- * @route   PATCH /api/work-orders/:id/work-status
- * @access  Private
- */
 export const updateWorkStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -380,6 +376,9 @@ export const updateWorkStatus = async (req, res) => {
       { $set: { workStatus } },
       { new: true, runValidators: true },
     );
+
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderStatusChanged", workOrder);
 
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
@@ -403,11 +402,6 @@ export const updateWorkStatus = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update billing/payment info
- * @route   PATCH /api/work-orders/:id/billing
- * @access  Private
- */
 export const updateBillingInfo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -441,6 +435,9 @@ export const updateBillingInfo = async (req, res) => {
       { $set: updateFields },
       { new: true, runValidators: true },
     );
+
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderUpdated", workOrder);
 
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
@@ -480,6 +477,9 @@ export const verifyWorkOrder = async (req, res) => {
       { new: true },
     );
 
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderVerified", workOrder);
+
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
     }
@@ -502,11 +502,6 @@ export const verifyWorkOrder = async (req, res) => {
   }
 };
 
-/**
- * @desc    Reject a Work Order with reason
- * @route   PATCH /api/work-orders/:id/reject
- * @access  Private (admin/manager)
- */
 export const rejectWorkOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -528,6 +523,9 @@ export const rejectWorkOrder = async (req, res) => {
       { new: true },
     );
 
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderRejected", workOrder);
+
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
     }
@@ -544,11 +542,6 @@ export const rejectWorkOrder = async (req, res) => {
   }
 };
 
-/**
- * @desc    Add document(s) to work order
- * @route   PATCH /api/work-orders/:id/documents
- * @access  Private
- */
 export const addDocuments = async (req, res) => {
   try {
     const { id } = req.params;
@@ -569,7 +562,8 @@ export const addDocuments = async (req, res) => {
       { $push: { documents: { $each: documents } } },
       { new: true },
     );
-
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderUpdated", workOrder);
     if (!workOrder) {
       deleteFilesFromDisk(documents);
       return sendResponse(res, 404, false, "Work order not found");
@@ -594,11 +588,6 @@ export const addDocuments = async (req, res) => {
   }
 };
 
-/**
- * @desc    Add POD (proof of delivery) files to worksite
- * @route   PATCH /api/work-orders/:id/pod
- * @access  Private
- */
 export const addPodFiles = async (req, res) => {
   try {
     const { id } = req.params;
@@ -614,6 +603,9 @@ export const addPodFiles = async (req, res) => {
       { $push: { "worksite.pod": { $each: pod } } },
       { new: true },
     );
+
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderUpdated", workOrder);
 
     if (!workOrder) {
       deleteFilesFromDisk(pod);
@@ -639,11 +631,6 @@ export const addPodFiles = async (req, res) => {
   }
 };
 
-/**
- * @desc    Add material(s) to worksite
- * @route   PATCH /api/work-orders/:id/materials
- * @access  Private
- */
 export const addMaterials = async (req, res) => {
   try {
     const { id } = req.params;
@@ -663,6 +650,8 @@ export const addMaterials = async (req, res) => {
       return sendResponse(res, 404, false, "Work order not found");
     }
 
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderUpdated", workOrder);
     return sendResponse(
       res,
       200,
@@ -681,11 +670,6 @@ export const addMaterials = async (req, res) => {
   }
 };
 
-/**
- * @desc    Soft delete a Work Order
- * @route   DELETE /api/work-orders/:id
- * @access  Private
- */
 export const deleteWorkOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -695,6 +679,9 @@ export const deleteWorkOrder = async (req, res) => {
       { $set: { isDeleted: true, status: "Inactive" } },
       { new: true },
     );
+
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderDeleted", id);
 
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
@@ -718,11 +705,6 @@ export const deleteWorkOrder = async (req, res) => {
   }
 };
 
-/**
- * @desc    Restore a soft-deleted Work Order
- * @route   PATCH /api/work-orders/:id/restore
- * @access  Private
- */
 export const restoreWorkOrder = async (req, res) => {
   try {
     const { id } = req.params;
@@ -732,6 +714,9 @@ export const restoreWorkOrder = async (req, res) => {
       { $set: { isDeleted: false, status: "Active" } },
       { new: true },
     );
+
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderRestored", workOrder);
 
     if (!workOrder) {
       return sendResponse(res, 404, false, "Deleted work order not found");
@@ -755,22 +740,19 @@ export const restoreWorkOrder = async (req, res) => {
   }
 };
 
-/**
- * @desc    Permanently delete a Work Order (hard delete)
- * @route   DELETE /api/work-orders/:id/permanent
- * @access  Private (super admin)
- */
 export const permanentDeleteWorkOrder = async (req, res) => {
   try {
     const { id } = req.params;
 
     const workOrder = await WorkOrder.findByIdAndDelete(id);
 
+    const io = req.app.get("io");
+    if (io) io.emit("workOrderPermanentlyDeleted", id);
+
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
     }
 
-    // Record hi delete ho raha hai, is liye related files bhi disk se clean kar dein
     if (workOrder.documents?.length) deleteFilesFromDisk(workOrder.documents);
     if (workOrder.worksite?.pod?.length)
       deleteFilesFromDisk(workOrder.worksite.pod);

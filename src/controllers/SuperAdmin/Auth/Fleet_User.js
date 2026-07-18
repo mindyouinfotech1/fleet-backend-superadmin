@@ -95,6 +95,9 @@ export const createSubAdmin = async (req, res) => {
 
     const { password: _pw, ...safeUser } = subAdmin.toObject();
 
+    const io = req.app.get("io");
+    if (io) io.emit("subAdminCreated", safeUser);
+
     res.status(201).json({
       success: true,
       message: "Sub-Admin Created Successfully",

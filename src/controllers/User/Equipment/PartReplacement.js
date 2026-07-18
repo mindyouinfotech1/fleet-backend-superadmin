@@ -59,7 +59,9 @@ export const getAllPartReplacements = async (req, res) => {
     const { organizationId, equipmentId, driverId, workshopId, status } =
       req.query;
 
-    let filter = {};
+    let filter = {
+      isDeleted: false, // Soft deleted records hide karne ke liye
+    };
 
     if (organizationId) filter.organizationId = organizationId;
     if (equipmentId) filter.equipmentId = equipmentId;
@@ -194,7 +196,14 @@ export const deletePartReplacement = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedReplacement = await PartReplacement.findByIdAndDelete(id);
+    const deletedReplacement = await PartReplacement.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+      { new: true },
+    );
 
     if (!deletedReplacement) {
       return res.status(404).json({
@@ -205,7 +214,7 @@ export const deletePartReplacement = async (req, res) => {
 
     // SOCKET EVENT
     const io = req.app.get("io");
-    if (io) io.emit("partReplacementDeleted", id);
+    if (io) io.emit("partReplacementDeleted", deletedReplacement);
 
     return res.status(200).json({
       success: true,
@@ -213,6 +222,39 @@ export const deletePartReplacement = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const restorePartReplacement = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const restored = await PartReplacement.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: false,
+        deletedAt: null,
+      },
+      { new: true },
+    );
+
+    if (!restored) {
+      return res.status(404).json({
+        success: false,
+        message: "Part Replacement not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Part Replacement restored successfully",
+      data: restored,
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
       message: error.message,
     });

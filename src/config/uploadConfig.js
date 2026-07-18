@@ -8,4 +8,6 @@ export const UPLOAD_PATHS = {
   WORK_ORDER_DOCUMENTS: "private/uploads/work-order-documents",
   WORK_ORDER_POD: "private/uploads/work-order-pod",
   MAINTENANCE_HISTORY_INVOICE: "private/uploads/maintenance-history",
+  HOTEL_RECEIPT: "private/uploads/hotelReceipt",
+  EXPENSE: "private/uploads/expenses",
 };

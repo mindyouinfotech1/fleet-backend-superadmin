@@ -2,34 +2,34 @@ import mongoose from "mongoose";
 
 const tyreReplacementSchema = new mongoose.Schema(
   {
-   organizationId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "BusinessUser",
-        required: true,
+    organizationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BusinessUser",
+      required: true,
     },
     tyreReplacementCode: {
       type: String,
       required: true,
       trim: true,
     },
-  
-      equipmentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Equipment",
-        required: true,
-      },
-  
-      driverId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Driver",
-        // required: true,
-      },
-  
-      workshopId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Workshop",
-        // required: true,
-      },
+
+    equipmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Equipment",
+      required: true,
+    },
+
+    driverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Driver",
+      // required: true,
+    },
+
+    workshopId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Workshop",
+      // required: true,
+    },
     tyreName: {
       type: String,
       required: true,
@@ -59,6 +59,8 @@ const tyreReplacementSchema = new mongoose.Schema(
       type: Number,
       //   required: true,
     },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

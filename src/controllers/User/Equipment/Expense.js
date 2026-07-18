@@ -82,6 +82,9 @@ export const deleteExpenseReceipt = async (req, res) => {
     expense.receipt = "";
     await expense.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("expenseUpdated", expense);
+
     return res.status(200).json({
       success: true,
       message: "Receipt deleted successfully",
@@ -101,7 +104,7 @@ export const getAllExpenses = async (req, res) => {
   try {
     const { organizationId, driverId, equipmentId, status } = req.query;
 
-    let filter = {};
+    let filter = { isDeleted: false };
 
     if (organizationId) filter.organizationId = organizationId;
     if (driverId) filter.driverId = driverId;
@@ -141,6 +144,7 @@ export const getExpensesByEquipment = async (req, res) => {
 
     const expenses = await Expense.find({
       equipmentId: equipmentId,
+      isDeleted: false,
     })
       .populate("organizationId")
       .populate("equipmentId")
@@ -162,7 +166,10 @@ export const getExpensesByEquipment = async (req, res) => {
 
 export const getExpenseById = async (req, res) => {
   try {
-    const expense = await Expense.findById(req.params.id)
+    const expense = await Expense.findOne({
+      _id: req.params.id,
+      isDeleted: false,
+    })
       .populate("organizationId")
       .populate("equipmentId")
       .populate("driverId")
@@ -244,6 +251,38 @@ export const updateExpense = async (req, res) => {
   }
 };
 
+// export const deleteExpense = async (req, res) => {
+//   try {
+//     const expense = await Expense.findById(req.params.id);
+
+//     if (!expense) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Expense not found",
+//       });
+//     }
+
+//     if (expense.receipt && fs.existsSync(expense.receipt)) {
+//       fs.unlinkSync(expense.receipt);
+//     }
+
+//     await expense.deleteOne();
+
+//     const io = req.app.get("io");
+//     if (io) io.emit("expenseDeleted", req.params.id);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Expense deleted successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const deleteExpense = async (req, res) => {
   try {
     const expense = await Expense.findById(req.params.id);
@@ -255,18 +294,47 @@ export const deleteExpense = async (req, res) => {
       });
     }
 
-    if (expense.receipt && fs.existsSync(expense.receipt)) {
-      fs.unlinkSync(expense.receipt);
-    }
-
-    await expense.deleteOne();
+    expense.isDeleted = true;
+    expense.deletedAt = new Date();
+    await expense.save();
 
     const io = req.app.get("io");
     if (io) io.emit("expenseDeleted", req.params.id);
 
     res.status(200).json({
       success: true,
-      message: "Expense deleted successfully",
+      message: "Expense deleted successfully (soft delete)",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const restoreExpense = async (req, res) => {
+  try {
+    const expense = await Expense.findByIdAndUpdate(
+      req.params.id,
+      { isDeleted: false, deletedAt: null },
+      { new: true },
+    );
+
+    if (!expense) {
+      return res.status(404).json({
+        success: false,
+        message: "Expense not found",
+      });
+    }
+
+    const io = req.app.get("io");
+    if (io) io.emit("expenseRestored", expense);
+
+    res.status(200).json({
+      success: true,
+      message: "Expense restored successfully",
+      data: expense,
     });
   } catch (error) {
     res.status(500).json({

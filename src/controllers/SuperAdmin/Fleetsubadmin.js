@@ -127,6 +127,9 @@ export const createSubAdmin = async (req, res) => {
 
     const { password: _pw, ...safeUser } = subAdmin.toObject();
 
+    const io = req.app.get("io");
+    if (io) io.emit("subAdminCreated", safeUser);
+
     res.status(201).json({
       success: true,
       message: "Sub-Admin Created Successfully",
@@ -327,6 +330,9 @@ export const updateSubAdmin = async (req, res) => {
 
     const { password, ...safeUser } = updated.toObject();
 
+    const io = req.app.get("io");
+    if (io) io.emit("subAdminUpdated", safeUser);
+
     return res.status(200).json({
       success: true,
       message: "Sub-Admin Updated Successfully",
@@ -420,6 +426,9 @@ export const deleteSubAdmin = async (req, res) => {
       isActive: false,
       status: "blocked",
     });
+
+    const io = req.app.get("io");
+    if (io) io.emit("subAdminDeleted", req.params.id);
 
     res.status(200).json({
       success: true,

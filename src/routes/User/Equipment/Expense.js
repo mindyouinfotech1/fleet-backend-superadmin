@@ -11,6 +11,7 @@ import {
   getExpenseById,
   updateExpense,
   deleteExpense,
+  restoreExpense,
 } from "../../../controllers/User/Equipment/Expense.js";
 
 const router = express.Router();
@@ -28,5 +29,5 @@ router.get("/equipment/:equipmentId", getExpensesByEquipment);
 router.get("/:id", getExpenseById);
 router.put("/:id", upload.single("receipt"), updateExpense);
 router.delete("/:id", deleteExpense);
-
+router.patch("/restore/:id", restoreExpense);
 export default router;

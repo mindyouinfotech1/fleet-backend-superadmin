@@ -58,7 +58,7 @@ export const getAllTyreReplacements = async (req, res) => {
   try {
     const { organizationId, equipmentId, driverId, workshopId } = req.query;
 
-    let filter = {};
+    let filter = { isDeleted: false };
 
     if (organizationId) filter.organizationId = organizationId;
     if (equipmentId) filter.equipmentId = equipmentId;
@@ -98,6 +98,7 @@ export const getTyreReplacementsByEquipment = async (req, res) => {
 
     const data = await TyreReplacement.find({
       equipmentId: equipmentId,
+      isDeleted: false,
     })
       .populate("organizationId")
       .populate("equipmentId")
@@ -120,7 +121,10 @@ export const getTyreReplacementsByEquipment = async (req, res) => {
 
 export const getTyreReplacementById = async (req, res) => {
   try {
-    const data = await TyreReplacement.findById(req.params.id)
+    const data = await TyreReplacement.findOne({
+      _id: req.params.id,
+      isDeleted: false,
+    })
       .populate("organizationId")
       .populate("equipmentId")
       .populate("driverId")
@@ -182,7 +186,14 @@ export const updateTyreReplacement = async (req, res) => {
 
 export const deleteTyreReplacement = async (req, res) => {
   try {
-    const deleted = await TyreReplacement.findByIdAndDelete(req.params.id);
+    const deleted = await TyreReplacement.findByIdAndUpdate(
+      req.params.id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+      { new: true },
+    );
 
     if (!deleted) {
       return res.status(404).json({
@@ -196,7 +207,41 @@ export const deleteTyreReplacement = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Deleted successfully",
+      message: "Deleted successfully (soft delete)",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const restoreTyreReplacement = async (req, res) => {
+  try {
+    const restored = await TyreReplacement.findByIdAndUpdate(
+      req.params.id,
+      {
+        isDeleted: false,
+        deletedAt: null,
+      },
+      { new: true },
+    );
+
+    if (!restored) {
+      return res.status(404).json({
+        success: false,
+        message: "Tyre replacement not found",
+      });
+    }
+
+    const io = req.app.get("io");
+    if (io) io.emit("tyreReplacementRestored", restored);
+
+    return res.status(200).json({
+      success: true,
+      message: "Restored successfully",
+      data: restored,
     });
   } catch (error) {
     return res.status(500).json({

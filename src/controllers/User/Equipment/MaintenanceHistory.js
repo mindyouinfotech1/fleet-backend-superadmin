@@ -2,15 +2,15 @@ import { MaintenanceHistory } from "../../../models/User/Maintenance/Maintenance
 import { Maintenance } from "../../../models/User/Maintenance/maintenanceDue.js";
 import { generateCode } from "../../../controllers/generateCode.js";
 
-const emitToOrg = (req, organizationId, equipmentId, event, payload) => {
-  const io = req.app.get("io");
-  if (!io) return;
+// const emitToOrg = (req, organizationId, equipmentId, event, payload) => {
+//   const io = req.app.get("io");
+//   if (!io) return;
 
-  io.to(`org_${organizationId}`).emit(event, payload);
-  if (equipmentId) {
-    io.to(`equipment_${equipmentId}`).emit(event, payload);
-  }
-};
+//   io.to(`org_${organizationId}`).emit(event, payload);
+//   if (equipmentId) {
+//     io.to(`equipment_${equipmentId}`).emit(event, payload);
+//   }
+// };
 
 export const createMaintenanceHistory = async (req, res) => {
   try {
@@ -125,23 +125,12 @@ export const createMaintenanceHistory = async (req, res) => {
       });
     }
 
-    emitToOrg(
-      req,
-      organizationId,
-      equipment,
-      "maintenanceHistory:created",
-      historyDoc,
-    );
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceHistoryCreated", historyDoc);
 
     if (dueRecord) {
       const refreshedDue = await Maintenance.findById(dueRecord._id);
-      emitToOrg(
-        req,
-        organizationId,
-        equipment,
-        "maintenanceDue:updated",
-        refreshedDue,
-      );
+      if (io) io.emit("maintenanceDueUpdated", refreshedDue);
     }
 
     return res.status(201).json({ success: true, data: historyDoc });
@@ -176,6 +165,9 @@ export const deleteMaintenanceInvoice = async (req, res) => {
     maintenanceHistory.invoice_file = null;
 
     await maintenanceHistory.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceHistoryUpdated", maintenanceHistory);
 
     return res.status(200).json({
       success: true,
@@ -301,13 +293,8 @@ export const updateMaintenanceHistory = async (req, res) => {
       { new: true, runValidators: true },
     );
 
-    emitToOrg(
-      req,
-      updated.organizationId,
-      updated.equipment,
-      "maintenanceHistory:updated",
-      updated,
-    );
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceHistoryUpdated", updated);
 
     return res.status(200).json({ success: true, data: updated });
   } catch (error) {
@@ -344,13 +331,8 @@ export const verifyMaintenanceHistory = async (req, res) => {
 
     await record.save();
 
-    emitToOrg(
-      req,
-      record.organizationId,
-      record.equipment,
-      "maintenanceHistory:verified",
-      record,
-    );
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceHistoryVerified", record);
 
     return res.status(200).json({ success: true, data: record });
   } catch (error) {
@@ -375,15 +357,8 @@ export const deleteMaintenanceHistory = async (req, res) => {
         .json({ success: false, message: "Record not found" });
     }
 
-    emitToOrg(
-      req,
-      record.organizationId,
-      record.equipment,
-      "maintenanceHistory:deleted",
-      {
-        _id: record._id,
-      },
-    );
+    const io = req.app.get("io");
+    if (io) io.emit("maintenanceHistoryDeleted", record._id);
 
     return res
       .status(200)

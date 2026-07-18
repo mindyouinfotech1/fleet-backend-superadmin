@@ -63,7 +63,10 @@ export const getAllWorkshops = async (req, res) => {
       });
     }
 
-    const workshops = await Workshop.find({ organizationId }).sort({
+    const workshops = await Workshop.find({
+      organizationId,
+      isDeleted: false,
+    }).sort({
       createdAt: -1,
     });
 
@@ -142,7 +145,14 @@ export const deleteWorkshop = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedWorkshop = await Workshop.findByIdAndDelete(id);
+    const deletedWorkshop = await Workshop.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+      { new: true },
+    );
 
     if (!deletedWorkshop) {
       return res.status(404).json({
@@ -151,13 +161,51 @@ export const deleteWorkshop = async (req, res) => {
       });
     }
 
-    //  SOCKET EVENT EMIT
+    // SOCKET EVENT EMIT
     const io = req.app.get("io");
     if (io) io.emit("workshopDeleted", id);
 
     return res.status(200).json({
       success: true,
       message: "Workshop deleted successfully",
+      data: deletedWorkshop,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const restoreWorkshop = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const workshop = await Workshop.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: false,
+        deletedAt: null,
+      },
+      { new: true },
+    );
+
+    if (!workshop) {
+      return res.status(404).json({
+        success: false,
+        message: "Workshop not found",
+      });
+    }
+
+    //  SOCKET EVENT EMIT
+    const io = req.app.get("io");
+    if (io) io.emit("workshopRestored", workshop);
+
+    return res.status(200).json({
+      success: true,
+      message: "Workshop restored successfully",
+      data: workshop,
     });
   } catch (error) {
     return res.status(500).json({

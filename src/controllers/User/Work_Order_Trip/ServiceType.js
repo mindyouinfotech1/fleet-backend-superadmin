@@ -18,12 +18,14 @@ export const createServiceType = async (req, res) => {
       status,
     } = req.body;
 
+   
     if (!organizationId || !serviceTypeName) {
       return res.status(400).json({
         success: false,
         message: "Organization and Service Type Name are required.",
       });
     }
+ 
 
     // Organization Check
 
@@ -36,12 +38,14 @@ export const createServiceType = async (req, res) => {
       });
     }
 
+
     // Duplicate Check
 
     const existingService = await ServiceType.findOne({
       organizationId,
       serviceTypeName,
     });
+    console.log("4");
 
     if (existingService) {
       return res.status(409).json({
@@ -53,16 +57,17 @@ export const createServiceType = async (req, res) => {
 
     // Auto Generate Service Type ID
 
-    const ServiceTypeId = await generateCode(
+    const serviceTypeCode = await generateCode(
       organizationId,
       "serviceType",
       "SERV",
     );
+  
 
     const serviceType = await ServiceType.create({
       organizationId,
-
-      ServiceTypeId,
+      serviceTypeCode,
+      ServiceTypeId: serviceTypeCode,
 
       serviceTypeName,
 
@@ -186,6 +191,48 @@ export const updateServiceType = async (req, res) => {
 
 // ================= DELETE SERVICE TYPE =================
 
+// export const deleteServiceType = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const serviceType = await ServiceType.findById(id);
+
+//     if (!serviceType) {
+//       return res.status(404).json({
+//         success: false,
+
+//         message: "Service Type not found.",
+//       });
+//     }
+
+//     await serviceType.deleteOne();
+
+//     // SOCKET EVENT
+
+//     const io = req.app.get("io");
+
+//     if (io) {
+//       io.emit("serviceTypeDeleted", {
+//         _id: id,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+
+//       message: "Service Type deleted successfully.",
+//     });
+//   } catch (error) {
+//     console.error(error);
+
+//     return res.status(500).json({
+//       success: false,
+
+//       message: "Error deleting service type.",
+//     });
+//   }
+// };
+
 export const deleteServiceType = async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,34 +242,30 @@ export const deleteServiceType = async (req, res) => {
     if (!serviceType) {
       return res.status(404).json({
         success: false,
-
         message: "Service Type not found.",
       });
     }
 
-    await serviceType.deleteOne();
+    serviceType.isDeleted = true;
+    serviceType.deletedAt = new Date();
+    await serviceType.save();
 
     // SOCKET EVENT
-
     const io = req.app.get("io");
 
     if (io) {
-      io.emit("serviceTypeDeleted", {
-        _id: id,
-      });
+      io.emit("serviceTypeDeleted", { _id: id });
     }
 
     return res.status(200).json({
       success: true,
-
-      message: "Service Type deleted successfully.",
+      message: "Service Type deleted successfully (soft delete).",
     });
   } catch (error) {
     console.error(error);
 
     return res.status(500).json({
       success: false,
-
       message: "Error deleting service type.",
     });
   }
@@ -327,6 +370,39 @@ export const changeServiceTypeStatus = async (req, res) => {
       success: false,
 
       message: "Error changing status.",
+    });
+  }
+};
+
+export const restoreServiceType = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const serviceType = await ServiceType.findByIdAndUpdate(
+      id,
+      { isDeleted: false, deletedAt: null },
+      { new: true },
+    );
+
+    if (!serviceType) {
+      return res.status(404).json({
+        success: false,
+        message: "Service Type not found.",
+      });
+    }
+
+    const io = req.app.get("io");
+    if (io) io.emit("serviceTypeRestored", serviceType);
+
+    return res.status(200).json({
+      success: true,
+      message: "Service Type restored successfully.",
+      data: serviceType,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error restoring service type.",
     });
   }
 };

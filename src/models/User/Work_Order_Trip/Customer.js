@@ -38,19 +38,19 @@ const customerSchema = new mongoose.Schema(
     },
 
     country: {
-      type: String,
+      type: Number,
       required: true,
       trim: true,
     },
 
     state: {
-      type: String,
+      type: Number,
       //   required: true,
       trim: true,
     },
 
     city: {
-      type: String,
+      type: Number,
       //   required: true,
       trim: true,
     },
@@ -64,6 +64,8 @@ const customerSchema = new mongoose.Schema(
       type: String,
       default: "Active",
     },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

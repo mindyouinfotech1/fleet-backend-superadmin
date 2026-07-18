@@ -34,7 +34,7 @@ const podUploader = createUploader({
 });
 
 const combinedUploader = createUploader({
-  uploadPath: UPLOAD_PATHS.WORK_ORDER_DOCUMENTS, // dono field isi base folder mein save honge
+  uploadPath: UPLOAD_PATHS.WORK_ORDER_DOCUMENTS, 
   allowedMimeTypes: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],
 });
 

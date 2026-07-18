@@ -159,6 +159,9 @@ export const createEquipment = async (req, res) => {
 
     await equipment.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentCreated", equipment);
+
     res.status(201).json({
       success: true,
       message: "Equipment created successfully",
@@ -175,8 +178,6 @@ export const createEquipment = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-// ================= DELETE SINGLE EQUIPMENT DOCUMENT =================
 
 export const deleteEquipmentDocument = async (req, res) => {
   try {
@@ -211,6 +212,9 @@ export const deleteEquipmentDocument = async (req, res) => {
     equipment.documents.pull(documentId);
 
     await equipment.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentUpdated", equipment);
 
     return res.status(200).json({
       success: true,
@@ -375,6 +379,9 @@ export const updateEquipment = async (req, res) => {
 
     await equipment.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentUpdated", equipment);
+
     res.status(200).json({
       success: true,
       message: "Equipment updated successfully",
@@ -497,6 +504,8 @@ export const addDocuments = async (req, res) => {
 
     await equipment.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentUpdated", equipment);
     res.status(200).json({
       success: true,
       message: "Documents added successfully",
@@ -540,7 +549,8 @@ export const deleteDocument = async (req, res) => {
     }
 
     await equipment.save();
-
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentUpdated", equipment);
     res
       .status(200)
       .json({ success: true, message: "Document deleted successfully" });
@@ -571,6 +581,9 @@ export const deleteEquipment = async (req, res) => {
     });
 
     await equipment.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentDeleted", equipment._id);
 
     res
       .status(200)
@@ -606,6 +619,9 @@ export const restoreEquipment = async (req, res) => {
 
     await equipment.save();
 
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentRestored", equipment);
+
     res
       .status(200)
       .json({ success: true, message: "Equipment restored successfully" });
@@ -640,6 +656,9 @@ export const updateEquipmentStatus = async (req, res) => {
     });
 
     await equipment.save();
+
+    const io = req.app.get("io");
+    if (io) io.emit("equipmentStatusChanged", equipment);
 
     res.status(200).json({
       success: true,

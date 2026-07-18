@@ -6,6 +6,7 @@ import {
   getTyreReplacementById,
   updateTyreReplacement,
   deleteTyreReplacement,
+  restoreTyreReplacement,
 } from "../../../controllers/User/Equipment/TyreReplacement.js";
 
 const router = express.Router();
@@ -16,5 +17,5 @@ router.get("/equipment/:equipmentId", getTyreReplacementsByEquipment);
 router.get("/:id", getTyreReplacementById);
 router.put("/:id", updateTyreReplacement);
 router.delete("/:id", deleteTyreReplacement);
-
+router.patch("/restore/:id", restoreTyreReplacement);
 export default router;

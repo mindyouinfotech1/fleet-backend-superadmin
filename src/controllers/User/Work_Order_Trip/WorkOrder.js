@@ -30,6 +30,8 @@ export const createWorkOrder = async (req, res) => {
   try {
     const { organizationId } = req.user || req.body;
 
+    console.log(" req.body", req.body);
+
     const documentFiles = mapUploadedFiles(req.files?.documents);
     const podFiles = mapUploadedFiles(req.files?.pod);
 
@@ -97,52 +99,54 @@ export const deleteWorkOrderDocument = async (req, res) => {
     const { workOrderId, documentId } = req.params;
 
     const workOrder = await WorkOrder.findById(workOrderId);
-
     if (!workOrder) {
-      return res.status(404).json({
-        success: false,
-        message: "Work order not found",
-      });
+      return sendResponse(res, 404, false, "Work order not found");
     }
 
-    const document = workOrder.documents.id(documentId);
+    // Pehle 'documents' array me dhundo
+    let doc = workOrder.documents.id(documentId);
+    let location = "documents";
 
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: "Document not found",
-      });
+    // Agar wahan nahi mila to 'worksite.pod' array me dhundo
+    if (!doc) {
+      doc = workOrder.worksite?.pod?.id(documentId);
+      location = "pod";
     }
 
-    // Delete physical file
-    if (document.fileUrl) {
-      const filePath = path.join(process.cwd(), document.fileUrl);
-
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+    if (!doc) {
+      return sendResponse(res, 404, false, "Document not found");
     }
 
-    // Remove document from array
-    workOrder.documents.pull(documentId);
+    // File disk se delete karo
+    deleteFilesFromDisk([{ fileUrl: doc.fileUrl }]);
+
+    // Sahi array se remove karo
+    if (location === "documents") {
+      workOrder.documents.pull(documentId);
+    } else {
+      workOrder.worksite.pod.pull(documentId);
+    }
 
     await workOrder.save();
 
     const io = req.app.get("io");
     if (io) io.emit("workOrderUpdated", workOrder);
 
-    return res.status(200).json({
-      success: true,
-      message: "Document deleted successfully",
-      data: workOrder.documents,
-    });
+    return sendResponse(
+      res,
+      200,
+      true,
+      "Document deleted successfully",
+      workOrder,
+    );
   } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("deleteWorkOrderDocument error:", error);
+    return sendResponse(
+      res,
+      500,
+      false,
+      error.message || "Failed to delete document",
+    );
   }
 };
 

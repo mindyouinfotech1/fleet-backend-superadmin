@@ -37,17 +37,17 @@ const UserSchema = new mongoose.Schema(
       type: String,
     },
     country: {
-      type: String,
+      type: Number,
       trim: true,
       default: null,
     },
     state: {
-      type: String,
+      type: Number,
       trim: true,
       default: null,
     },
     city: {
-      type: String,
+      type: Number,
       default: null,
     },
     pincode: {
@@ -68,7 +68,7 @@ const UserSchema = new mongoose.Schema(
 
     isOrgAdmin: {
       type: Boolean,
-      default: false, 
+      default: false,
     },
     lastLogin: {
       type: Date,

@@ -2,6 +2,8 @@ import { Customer } from "../../../models/User/Work_Order_Trip/Customer.js";
 import { User as BusinessUser } from "../../../models/SuperAdmin/Auth/Bussiness_User.js";
 import { generateCode } from "../../../controllers/generateCode.js";
 
+import mongoose from "mongoose";
+
 // ================= CREATE CUSTOMER =================
 
 export const createCustomer = async (req, res) => {
@@ -186,46 +188,6 @@ export const updateCustomer = async (req, res) => {
 };
 
 // ================= DELETE CUSTOMER =================
-
-// export const deleteCustomer = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const customer = await Customer.findById(id);
-
-//     if (!customer) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Customer not found.",
-//       });
-//     }
-
-//     await customer.deleteOne();
-
-//     // SOCKET EVENT
-
-//     const io = req.app.get("io");
-
-//     if (io) {
-//       io.emit("customerDeleted", {
-//         _id: id,
-//       });
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Customer deleted successfully.",
-//     });
-//   } catch (error) {
-//     console.error(error);
-
-//     return res.status(500).json({
-//       success: false,
-//       message: "Error deleting customer.",
-//     });
-//   }
-// };
-
 export const deleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
@@ -331,10 +293,76 @@ export const getCustomers = async (req, res) => {
   try {
     const { organizationId } = req.params;
 
-    const customers = await Customer.find({
-      organizationId,
-      isDeleted: false,
-    }).sort({ createdAt: -1 });
+    const customers = await Customer.aggregate([
+      {
+        $match: {
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+          isDeleted: false,
+        },
+      },
+
+      // Country lookup
+      {
+        $lookup: {
+          from: "countries",
+          localField: "country",
+          foreignField: "_id",
+          as: "countryData",
+        },
+      },
+
+      // State lookup
+      {
+        $lookup: {
+          from: "states",
+          localField: "state",
+          foreignField: "_id",
+          as: "stateData",
+        },
+      },
+
+      // City lookup
+      {
+        $lookup: {
+          from: "cities",
+          localField: "city",
+          foreignField: "_id",
+          as: "cityData",
+        },
+      },
+
+      // Replace IDs with names
+      {
+        $addFields: {
+          country: {
+            $ifNull: [{ $arrayElemAt: ["$countryData.name", 0] }, null],
+          },
+
+          state: {
+            $ifNull: [{ $arrayElemAt: ["$stateData.name", 0] }, null],
+          },
+
+          city: {
+            $ifNull: [{ $arrayElemAt: ["$cityData.name", 0] }, null],
+          },
+        },
+      },
+
+      // Remove lookup arrays
+      {
+        $project: {
+          countryData: 0,
+          stateData: 0,
+          cityData: 0,
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+    ]);
 
     return res.status(200).json({
       success: true,
@@ -344,7 +372,7 @@ export const getCustomers = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Error fetching customers.",
+      message: error.message,
     });
   }
 };

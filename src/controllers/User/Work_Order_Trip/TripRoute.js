@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import { TripRoute } from "../../../models/User/Work_Order_Trip/TripRoute.js";
 
-
-
 const recalculateRouteCounts = (tripRoute) => {
   const stops = tripRoute.stops || [];
 
@@ -227,7 +225,7 @@ export const getTripRouteByTripId = async (req, res) => {
     if (!tripRoute) {
       return res
         .status(404)
-        .json({ success: false, message: "Is trip ka route nahi mila" });
+        .json({ success: false, message: " trip route not found" });
     }
 
     return res.status(200).json({ success: true, data: tripRoute });
@@ -235,7 +233,7 @@ export const getTripRouteByTripId = async (req, res) => {
     console.error(error);
     return res.status(500).json({
       success: false,
-      message: "Trip route fetch karte waqt kuch galat ho gaya",
+      message: "Something went wrong",
     });
   }
 };

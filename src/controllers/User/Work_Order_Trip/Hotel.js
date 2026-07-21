@@ -106,11 +106,14 @@ export const getAllHotels = async (req, res) => {
     }
 
     const hotels = await Hotel.find({
-      organizationId: organizationId,
+      organizationId,
       isDeleted: false,
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .populate({
+        path: "tripId",
+        select: "tripCode", // sirf tripCode return hoga
+      })
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -123,6 +126,7 @@ export const getAllHotels = async (req, res) => {
     });
   }
 };
+
 // Get Hotels By Trip
 
 export const getHotelsByTrip = async (req, res) => {

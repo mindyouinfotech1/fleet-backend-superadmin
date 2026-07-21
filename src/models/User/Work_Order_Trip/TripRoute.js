@@ -8,7 +8,7 @@ const tripStopSchema = new mongoose.Schema(
     },
     stopName: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
     stopType: {
@@ -67,7 +67,7 @@ const tripRouteSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Trip",
       required: true,
-      unique: true,
+      // unique: true,
     },
     routeName: {
       type: String,

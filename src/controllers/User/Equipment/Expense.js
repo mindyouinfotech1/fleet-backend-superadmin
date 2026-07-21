@@ -32,7 +32,7 @@ export const createExpense = async (req, res) => {
       paymentMode,
       tripId: tripId || null,
       status,
-      receipt: req.file ? `private/uploads/expense/${req.file.filename}` : "",
+      receipt: req.file ? `private/uploads/expenses/${req.file.filename}` : "",
     });
 
     const io = req.app.get("io");
@@ -250,38 +250,6 @@ export const updateExpense = async (req, res) => {
     });
   }
 };
-
-// export const deleteExpense = async (req, res) => {
-//   try {
-//     const expense = await Expense.findById(req.params.id);
-
-//     if (!expense) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Expense not found",
-//       });
-//     }
-
-//     if (expense.receipt && fs.existsSync(expense.receipt)) {
-//       fs.unlinkSync(expense.receipt);
-//     }
-
-//     await expense.deleteOne();
-
-//     const io = req.app.get("io");
-//     if (io) io.emit("expenseDeleted", req.params.id);
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Expense deleted successfully",
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
 
 export const deleteExpense = async (req, res) => {
   try {

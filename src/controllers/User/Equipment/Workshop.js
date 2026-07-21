@@ -3,6 +3,7 @@ import country from "../../../models/Address/country.js";
 import state from "../../../models/Address/state.js";
 import city from "../../../models/Address/city.js";
 import { generateCode } from "../../../controllers/generateCode.js";
+import mongoose from "mongoose";
 
 export const createWorkshop = async (req, res) => {
   try {
@@ -63,12 +64,76 @@ export const getAllWorkshops = async (req, res) => {
       });
     }
 
-    const workshops = await Workshop.find({
-      organizationId,
-      isDeleted: false,
-    }).sort({
-      createdAt: -1,
-    });
+    const workshops = await Workshop.aggregate([
+      {
+        $match: {
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+          isDeleted: false,
+        },
+      },
+
+      // Country lookup
+      {
+        $lookup: {
+          from: "countries",
+          localField: "country",
+          foreignField: "_id",
+          as: "countryData",
+        },
+      },
+
+      // State lookup
+      {
+        $lookup: {
+          from: "states",
+          localField: "state",
+          foreignField: "_id",
+          as: "stateData",
+        },
+      },
+
+      // City lookup
+      {
+        $lookup: {
+          from: "cities",
+          localField: "city",
+          foreignField: "_id",
+          as: "cityData",
+        },
+      },
+
+      // Clean response
+      {
+        $addFields: {
+          country: {
+            $ifNull: [{ $arrayElemAt: ["$countryData.name", 0] }, null],
+          },
+
+          state: {
+            $ifNull: [{ $arrayElemAt: ["$stateData.name", 0] }, null],
+          },
+
+          city: {
+            $ifNull: [{ $arrayElemAt: ["$cityData.name", 0] }, null],
+          },
+        },
+      },
+
+      // Remove extra lookup arrays
+      {
+        $project: {
+          countryData: 0,
+          stateData: 0,
+          cityData: 0,
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+    ]);
 
     return res.status(200).json({
       success: true,

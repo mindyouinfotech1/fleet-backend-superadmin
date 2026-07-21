@@ -6,6 +6,7 @@ import { User as FleetUser } from "../../models/SuperAdmin/Orgainization/User.js
 import { User as BusinessUser } from "../../models/SuperAdmin/Auth/Bussiness_User.js";
 import { Role } from "../../models/SuperAdmin/Orgainization/Role.js";
 import { UPLOAD_PATHS } from "../../config/uploadConfig.js";
+import mongoose from "mongoose";
 
 const PROFILE_PHOTO_DIR = UPLOAD_PATHS.PROFILE_PHOTO_DIR;
 
@@ -376,18 +377,116 @@ export const getSubAdminById = async (req, res) => {
 };
 
 // ================= GET ALL SUB-ADMINS (for an org) =================
+
+// export const getAllSubAdmins = async (req, res) => {
+//   try {
+//     const { orgId } = req.query;
+
+//     const filter = {
+//       isDelete: false,
+//       isActive: true,
+//       isOrgAdmin: false,
+//       ...(orgId && { orgId }),
+//     };
+
+//     const users = await FleetUser.find(filter).select("-password");
+
+//     console.log("users", users);
+
+//     res.status(200).json({
+//       success: true,
+//       count: users.length,
+//       data: users,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const getAllSubAdmins = async (req, res) => {
   try {
     const { orgId } = req.query;
 
-    const filter = {
+    const match = {
       isDelete: false,
       isActive: true,
       isOrgAdmin: false,
-      ...(orgId && { orgId }),
+      ...(orgId && { orgId: new mongoose.Types.ObjectId(orgId) }),
     };
 
-    const users = await FleetUser.find(filter).select("-password");
+    const users = await FleetUser.aggregate([
+      {
+        $match: match,
+      },
+
+      // Country lookup
+      {
+        $lookup: {
+          from: "countries",
+          localField: "country",
+          foreignField: "_id",
+          as: "countryData",
+        },
+      },
+
+      // State lookup
+      {
+        $lookup: {
+          from: "states",
+          localField: "state",
+          foreignField: "_id",
+          as: "stateData",
+        },
+      },
+
+      // City lookup
+      {
+        $lookup: {
+          from: "cities",
+          localField: "city",
+          foreignField: "_id",
+          as: "cityData",
+        },
+      },
+
+      // Replace IDs with names
+      {
+        $addFields: {
+          country: {
+            $ifNull: [{ $arrayElemAt: ["$countryData.name", 0] }, null],
+          },
+
+          state: {
+            $ifNull: [{ $arrayElemAt: ["$stateData.name", 0] }, null],
+          },
+
+          city: {
+            $ifNull: [{ $arrayElemAt: ["$cityData.name", 0] }, null],
+          },
+        },
+      },
+
+      // Remove lookup arrays + password
+      {
+        $project: {
+          password: 0,
+          countryData: 0,
+          stateData: 0,
+          cityData: 0,
+        },
+      },
+
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+    ]);
+
+    // console.log("users", users);
 
     res.status(200).json({
       success: true,

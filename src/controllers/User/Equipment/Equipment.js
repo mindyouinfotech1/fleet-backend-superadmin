@@ -402,7 +402,7 @@ export const getAllEquipment = async (req, res) => {
   try {
     const { equipmentStatus, fuelType, search, organizationId } = req.query;
 
-    const filter = {};
+    const filter = { organizationId };
 
     // Organization filter
     if (organizationId) {

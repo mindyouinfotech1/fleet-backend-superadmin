@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { InspectionQuestion } from "../../../models/User/Work_Order_Trip/EquipmentQuestion.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { inspectionChecklist } from "../../../config/inspectionChecklist.js";
 
 export const createInspectionQuestion = async (req, res) => {
   try {
@@ -33,11 +35,28 @@ export const createInspectionQuestion = async (req, res) => {
           message: "Each category must have at least one question",
         });
       }
+      // for (const q of cat.questions) {
+      //   if (!q.question || !q.answer) {
+      //     return res.status(400).json({
+      //       success: false,
+      //       message: "Each question must have both 'question' and 'answer'",
+      //     });
+      //   }
+      // }
+
       for (const q of cat.questions) {
         if (!q.question || !q.answer) {
           return res.status(400).json({
             success: false,
             message: "Each question must have both 'question' and 'answer'",
+          });
+        }
+
+        //  NEW: priority validate karo (agar frontend se aa raha hai)
+        if (q.priority && !["high", "medium", "low"].includes(q.priority)) {
+          return res.status(400).json({
+            success: false,
+            message: "priority must be one of: high, medium, low",
           });
         }
       }
@@ -55,79 +74,6 @@ export const createInspectionQuestion = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Inspection question created successfully",
-      data: inspectionQuestion,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const getAllInspectionQuestions = async (req, res) => {
-  try {
-    const { organizationId, equipmentId, page = 1, limit = 20 } = req.query;
-
-    const filter = {};
-    if (organizationId) filter.organizationId = organizationId;
-    if (equipmentId) filter.equipmentId = equipmentId;
-
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const [data, total] = await Promise.all([
-      InspectionQuestion.find(filter)
-        .populate("organizationId", "name email") // apni BusinessUser fields ke hisab se adjust karo
-        .populate("equipmentId", "name") // apni Equipment fields ke hisab se adjust karo
-        .populate("categories.categoryId", "name") // apni Category fields ke hisab se adjust karo
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit)),
-      InspectionQuestion.countDocuments(filter),
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      message: "Inspection questions fetched successfully",
-      total,
-      page: Number(page),
-      limit: Number(limit),
-      data,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const getInspectionQuestionById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid inspection question ID",
-      });
-    }
-
-    const inspectionQuestion = await InspectionQuestion.findById(id)
-      .populate("organizationId", "name email")
-      .populate("equipmentId", "name")
-      .populate("categories.categoryId", "name");
-
-    if (!inspectionQuestion) {
-      return res.status(404).json({
-        success: false,
-        message: "Inspection question not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Inspection question fetched successfully",
       data: inspectionQuestion,
     });
   } catch (error) {
@@ -229,12 +175,20 @@ export const addCategoryToInspectionQuestion = async (req, res) => {
 export const addQuestionToCategory = async (req, res) => {
   try {
     const { id, categoryId } = req.params;
-    const { question, answer } = req.body;
+    const { question, answer, isMandatory, priority } = req.body; // CHANGED
 
     if (!question || !answer) {
       return res.status(400).json({
         success: false,
         message: "question and answer are required",
+      });
+    }
+
+    // NEW: priority validate
+    if (priority && !["high", "medium", "low"].includes(priority)) {
+      return res.status(400).json({
+        success: false,
+        message: "priority must be one of: high, medium, low",
       });
     }
 
@@ -254,7 +208,14 @@ export const addQuestionToCategory = async (req, res) => {
       });
     }
 
-    category.questions.push({ question, answer });
+    // CHANGED: isMandatory & priority bhi push karo
+    category.questions.push({
+      question,
+      answer,
+      ...(isMandatory !== undefined && { isMandatory }),
+      ...(priority && { priority }),
+    });
+
     await inspectionQuestion.save();
 
     const io = req.app.get("io");
@@ -276,7 +237,15 @@ export const addQuestionToCategory = async (req, res) => {
 export const updateQuestionInCategory = async (req, res) => {
   try {
     const { id, categoryId, questionId } = req.params;
-    const { question, answer } = req.body;
+    const { question, answer, isMandatory, priority } = req.body; // CHANGED
+
+    // NEW: priority validate
+    if (priority && !["high", "medium", "low"].includes(priority)) {
+      return res.status(400).json({
+        success: false,
+        message: "priority must be one of: high, medium, low",
+      });
+    }
 
     const inspectionQuestion = await InspectionQuestion.findById(id);
     if (!inspectionQuestion) {
@@ -304,6 +273,8 @@ export const updateQuestionInCategory = async (req, res) => {
 
     if (question) questionDoc.question = question;
     if (answer) questionDoc.answer = answer;
+    if (isMandatory !== undefined) questionDoc.isMandatory = isMandatory; // NEW
+    if (priority) questionDoc.priority = priority; // NEW
 
     await inspectionQuestion.save();
 
@@ -445,3 +416,158 @@ export const deleteInspectionQuestion = async (req, res) => {
     });
   }
 };
+
+export const getAllInspectionQuestions = async (req, res) => {
+  try {
+    const { organizationId, equipmentId, page = 1, limit = 20 } = req.query;
+
+    const filter = {};
+
+    if (organizationId) filter.organizationId = organizationId;
+    if (equipmentId) filter.equipmentId = equipmentId;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [data, total] = await Promise.all([
+      InspectionQuestion.find(filter)
+        .populate("organizationId")
+        .populate(
+          "equipmentId",
+          "equipmentName equipmentType registrationNumber",
+        )
+        .populate("categories.categoryId", "categoryName")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      InspectionQuestion.countDocuments(filter),
+    ]);
+
+    const formattedData = data.map((item) => ({
+      _id: item._id,
+
+      organization: {
+        _id: item.organizationId?._id,
+        name: item.organizationId?.name,
+        email: item.organizationId?.email,
+      },
+
+      equipment: {
+        _id: item.equipmentId?._id,
+        equipmentName: item.equipmentId?.equipmentName,
+        equipmentType: item.equipmentId?.equipmentType,
+        registrationNumber: item.equipmentId?.registrationNumber,
+      },
+
+      categories: item.categories.map((category) => ({
+        _id: category.categoryId?._id,
+        categoryName: category.categoryId?.categoryName,
+
+        questions: category.questions.map((q) => ({
+          _id: q._id,
+          question: q.question,
+          answer: q.answer,
+        })),
+      })),
+
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: "Inspection questions fetched successfully",
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      data: formattedData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getInspectionQuestionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid inspection question ID",
+      });
+    }
+
+    const inspectionQuestion = await InspectionQuestion.findById(id)
+      .populate("organizationId", "name email")
+      .populate("equipmentId", "name")
+      .populate("categories.categoryId", "name");
+
+    if (!inspectionQuestion) {
+      return res.status(404).json({
+        success: false,
+        message: "Inspection question not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Inspection question fetched successfully",
+      data: inspectionQuestion,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const generateAiInspectionQuestions = async (req, res) => {
+  try {
+    const { organizationId, equipmentId, equipmentName, equipmentType } =
+      req.body;
+
+    console.log("body", req.body);
+
+    if (!equipmentType) {
+      return res.status(400).json({
+        success: false,
+        message: "equipmentType is required",
+      });
+    }
+
+    // Truck -> truck convert karega
+    const type = equipmentType.toLowerCase();
+
+    const data = inspectionChecklist[type];
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "Checklist not found for this equipment type",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      equipment: {
+        organizationId,
+        equipmentId,
+        equipmentName,
+        equipmentType,
+      },
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+

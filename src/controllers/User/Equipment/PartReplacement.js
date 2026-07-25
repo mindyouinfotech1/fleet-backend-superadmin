@@ -60,7 +60,8 @@ export const getAllPartReplacements = async (req, res) => {
       req.query;
 
     let filter = {
-      isDeleted: false, // Soft deleted records hide karne ke liye
+      isDeleted: false,
+      organizationId,
     };
 
     if (organizationId) filter.organizationId = organizationId;

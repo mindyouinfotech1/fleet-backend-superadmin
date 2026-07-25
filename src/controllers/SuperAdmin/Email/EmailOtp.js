@@ -45,7 +45,7 @@ export const sendEmailOtp = async (req, res) => {
       { user_id, orgid },
       {
         recipient_email,
-        new_email, // नए email को store करें
+        new_email,
         otp: hashedOtp,
         otp_plain: otp,
         is_verified: false,
@@ -58,19 +58,19 @@ export const sendEmailOtp = async (req, res) => {
     console.log(`Generated OTP for ${recipient_email}: ${otp}`);
 
     // OTP send to recipient_email
-    const info = await transporter.sendMail({
-      from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
-      to: recipient_email,
-      subject: "Your OTP for Email Verification",
-      html: `
-        <h3>Email Verification</h3>
-        <p>Your OTP is:</p>
-        <h2>${otp}</h2>
-        <p>This OTP will expire in 5 minutes.</p>
-      `,
-    });
+    // const info = await transporter.sendMail({
+    //   from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM_ADDRESS}>`,
+    //   to: recipient_email,
+    //   subject: "Your OTP for Email Verification",
+    //   html: `
+    //     <h3>Email Verification</h3>
+    //     <p>Your OTP is:</p>
+    //     <h2>${otp}</h2>
+    //     <p>This OTP will expire in 5 minutes.</p>
+    //   `,
+    // });
 
-    console.log("Email sent successfully:", info.messageId);
+    // console.log("Email sent successfully:", info.messageId);
 
     return res.status(200).json({
       message: "OTP generated and email sent successfully",

@@ -34,6 +34,9 @@ import hotelRoutes from "./routes/User/Work_Order_Trip/Hotel.js";
 import tripExpenseRoutes from "./routes/User/Work_Order_Trip/Expense.js";
 import inspectionQuestionRoutes from "./routes/User/Work_Order_Trip/EquipmentQuestion.js";
 import ispCategoryRoutes from "./routes/User/Work_Order_Trip/Isp_Category.js";
+import insp_QuestionRoutes from "./routes/User/Work_Order_Trip/Insp_Question.js";
+import driverEmailOtpRoutes from "./routes/SuperAdmin/Email/Driver/EmailOtp.js";
+import driverForgetPasswordRoutes from "./routes/SuperAdmin/Email/Driver/forgetpass.js";
 
 dotenv.config();
 connectDB();
@@ -77,6 +80,8 @@ app.use("/api/trip-routes", tripRoute);
 app.use("/api/trip", tripRoutes);
 app.use("/api/hotels", hotelRoutes);
 app.use("/api/trip-expenses", tripExpenseRoutes);
+app.use("/api/insp-questions", insp_QuestionRoutes);
+
 app.use("/api/inspection-questions", inspectionQuestionRoutes);
 app.use("/api/isp-categories", ispCategoryRoutes);
 
@@ -90,7 +95,11 @@ app.use("/api/fleet-sub-admin", fleetSubAdminRoutes);
 
 //  User Routes
 app.use("/api/email-otp", emailOtpRoutes);
-app.use("/api/auth", forgetpassRoutes);
+app.use("/api/forget-password", forgetpassRoutes);
+
+// Driver Routes
+app.use("/api/driver-emails", driverEmailOtpRoutes);
+app.use("/api/driver-forgot-password", driverForgetPasswordRoutes);
 
 app.use("/api/driver-status", driverStatusRoutes);
 

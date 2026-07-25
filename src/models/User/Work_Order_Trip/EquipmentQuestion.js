@@ -20,8 +20,7 @@ const InspectionQuestionSchema = new mongoose.Schema(
       {
         categoryId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Category",
-          required: true,
+          ref: "InspectionCategory",
         },
 
         questions: [
@@ -36,6 +35,17 @@ const InspectionQuestionSchema = new mongoose.Schema(
               type: String,
               required: true,
               trim: true,
+            },
+
+            isMandatory: {
+              type: Boolean,
+              default: true, // by default sab mandatory maan lo
+            },
+
+            priority: {
+              type: String,
+              enum: ["high", "medium", "low"],
+              default: "medium",
             },
           },
         ],

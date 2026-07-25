@@ -3,9 +3,17 @@ import fs from "fs";
 import path from "path";
 import { WorkOrder } from "../../../models/User/Work_Order_Trip/WorkOrder.js";
 import { generateCode } from "../../../controllers/generateCode.js";
+import { v4 as uuidv4 } from "uuid";
+import { customAlphabet } from "nanoid";
 
 const sendResponse = (res, status, success, message, data = null) => {
   return res.status(status).json({ success, message, data });
+};
+
+const createTrackingId = () => {
+  const number = Math.floor(1000000 + Math.random() * 9000000);
+
+  return `TRK${number}`;
 };
 
 const mapUploadedFiles = (files = []) => {
@@ -58,6 +66,7 @@ export const createWorkOrder = async (req, res) => {
     const payload = {
       ...req.body,
       organizationId: organizationId || req.body.organizationId,
+      trackingId: createTrackingId(),
       workOrderCode,
       documents: documentFiles,
       billing,
@@ -150,6 +159,79 @@ export const deleteWorkOrderDocument = async (req, res) => {
   }
 };
 
+// export const getAllWorkOrders = async (req, res) => {
+//   try {
+//     const {
+//       organizationId,
+//       customerId,
+//       workStatus,
+//       status,
+//       verifyStatus,
+//       jobType,
+//       search,
+//       startDate,
+//       endDate,
+//       page = 1,
+//       limit = 10,
+//       sortBy = "createdAt",
+//       sortOrder = "desc",
+//     } = req.query;
+
+//     const filter = { isDeleted: false };
+//     console.log("hello");
+//     if (organizationId) filter.organizationId = organizationId;
+//     // if (customerId) filter.customerId = customerId;
+//     if (workStatus) filter.workStatus = workStatus;
+//     if (status) filter.status = status;
+//     if (verifyStatus) filter.verifyStatus = verifyStatus;
+//     if (jobType) filter.jobType = { $regex: jobType, $options: "i" };
+
+//     if (startDate || endDate) {
+//       filter.startDate = {};
+//       if (startDate) filter.startDate.$gte = new Date(startDate);
+//       if (endDate) filter.startDate.$lte = new Date(endDate);
+//     }
+
+//     if (search) {
+//       filter.$or = [
+//         { customerName: { $regex: search, $options: "i" } },
+//         { projectContractId: { $regex: search, $options: "i" } },
+//         { "billing.invoiceNumber": { $regex: search, $options: "i" } },
+//       ];
+//     }
+
+//     const skip = (Number(page) - 1) * Number(limit);
+//     const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+
+//     const [workOrders, total] = await Promise.all([
+//       WorkOrder.find(filter)
+//         .populate("organizationId", "name")
+//         .sort(sort)
+//         .skip(skip)
+//         .limit(Number(limit)),
+//       WorkOrder.countDocuments(filter),
+//     ]);
+
+//     return sendResponse(res, 200, true, "Work orders fetched successfully", {
+//       workOrders,
+//       pagination: {
+//         total,
+//         page: Number(page),
+//         limit: Number(limit),
+//         totalPages: Math.ceil(total / Number(limit)),
+//       },
+//     });
+//   } catch (error) {
+//     console.error("getAllWorkOrders error:", error);
+//     return sendResponse(
+//       res,
+//       500,
+//       false,
+//       error.message || "Failed to fetch work orders",
+//     );
+//   }
+// };
+
 export const getAllWorkOrders = async (req, res) => {
   try {
     const {
@@ -168,10 +250,16 @@ export const getAllWorkOrders = async (req, res) => {
       sortOrder = "desc",
     } = req.query;
 
-    const filter = { isDeleted: false };
+    // organizationId is mandatory
+    if (!organizationId) {
+      return sendResponse(res, 400, false, "organizationId is required");
+    }
 
-    if (organizationId) filter.organizationId = organizationId;
-    // if (customerId) filter.customerId = customerId;
+    const filter = {
+      isDeleted: false,
+      organizationId,
+    };
+
     if (workStatus) filter.workStatus = workStatus;
     if (status) filter.status = status;
     if (verifyStatus) filter.verifyStatus = verifyStatus;

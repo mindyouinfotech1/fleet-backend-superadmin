@@ -247,18 +247,77 @@ export const getDriverById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const driver = await Driver.findById(id);
+    const driver = await Driver.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(id),
+        },
+      },
 
-    if (!driver) {
+      // Country Lookup
+      {
+        $lookup: {
+          from: "countries",
+          localField: "countryId",
+          foreignField: "countryId",
+          as: "countryData",
+        },
+      },
+
+      // State Lookup
+      {
+        $lookup: {
+          from: "states",
+          localField: "stateId",
+          foreignField: "stateId",
+          as: "stateData",
+        },
+      },
+
+      // City Lookup
+      {
+        $lookup: {
+          from: "cities",
+          localField: "cityId",
+          foreignField: "cityId",
+          as: "cityData",
+        },
+      },
+
+      {
+        $addFields: {
+          country: {
+            $ifNull: [{ $arrayElemAt: ["$countryData.name", 0] }, null],
+          },
+          state: {
+            $ifNull: [{ $arrayElemAt: ["$stateData.name", 0] }, null],
+          },
+          city: {
+            $ifNull: [{ $arrayElemAt: ["$cityData.name", 0] }, null],
+          },
+        },
+      },
+
+      {
+        $project: {
+          countryData: 0,
+          stateData: 0,
+          cityData: 0,
+        },
+      },
+    ]);
+
+    if (!driver.length) {
       return res.status(404).json({
         success: false,
         message: "Driver not found",
       });
     }
 
+    // console.log("driver", driver);
     return res.status(200).json({
       success: true,
-      data: driver,
+      data: driver[0],
     });
   } catch (error) {
     return res.status(500).json({
@@ -357,6 +416,112 @@ export const changeDriverStatus = async (req, res) => {
       success: false,
       message: "Error updating driver status",
       error: error.message,
+    });
+  }
+};
+
+export const updateDriverPassword = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!driverId || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Driver ID, current password and new password are required.",
+      });
+    }
+
+    // Driver find
+    const driver = await Driver.findById(driverId);
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: "Driver not found.",
+      });
+    }
+
+    // Current password check
+    const isMatch = await bcrypt.compare(currentPassword, driver.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect.",
+      });
+    }
+
+    // Same password check
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as current password.",
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    driver.password = hashedPassword;
+    driver.showPassword = newPassword;
+
+    await driver.save();
+    const io = req.app.get("io");
+    if (io) io.emit("driverUpdatedPassword", driver);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while updating the password.",
+    });
+  }
+};
+
+export const resetDriverPassword = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { newPassword } = req.body;
+
+    if (!driverId || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Driver ID and new password are required.",
+      });
+    }
+
+    const driver = await Driver.findById(driverId);
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: "Driver not found.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    driver.password = hashedPassword;
+    driver.showPassword = newPassword; // Optional
+
+    await driver.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Driver password updated successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong while updating the password.",
     });
   }
 };

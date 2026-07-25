@@ -6,6 +6,7 @@ import {
   updateDriver,
   deleteDriver,
   changeDriverStatus,
+  updateDriverPassword,
 } from "../../../controllers/User/Drivers/Driver.js";
 import {
   driverLogin,
@@ -25,5 +26,7 @@ router.get("/:id", getDriverById);
 router.put("/:id", updateDriver);
 router.delete("/:id", deleteDriver);
 router.patch("/:id/status", changeDriverStatus);
+
+router.put("/update-password/:driverId", updateDriverPassword);
 
 export default router;

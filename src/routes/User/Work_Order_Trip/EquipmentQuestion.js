@@ -10,7 +10,8 @@ import {
   addQuestionToCategory,
   updateQuestionInCategory,
   deleteQuestionFromCategory,
-} from "../../../controllers/User/Work_Order_Trip/EquipmentQuestion.js"; 
+  generateAiInspectionQuestions,
+} from "../../../controllers/User/Work_Order_Trip/EquipmentQuestion.js";
 
 const router = express.Router();
 
@@ -38,5 +39,7 @@ router.delete(
   "/:id/category/:categoryId/question/:questionId",
   deleteQuestionFromCategory,
 );
+
+router.post("/ai-generate", generateAiInspectionQuestions);
 
 export default router;

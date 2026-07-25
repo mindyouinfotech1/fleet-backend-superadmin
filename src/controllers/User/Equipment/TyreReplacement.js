@@ -58,9 +58,9 @@ export const getAllTyreReplacements = async (req, res) => {
   try {
     const { organizationId, equipmentId, driverId, workshopId } = req.query;
 
-    let filter = { isDeleted: false };
+    let filter = { isDeleted: false, organizationId };
 
-    if (organizationId) filter.organizationId = organizationId;
+    // if (organizationId) filter.organizationId = organizationId;
     if (equipmentId) filter.equipmentId = equipmentId;
     if (driverId) filter.driverId = driverId;
     if (workshopId) filter.workshopId = workshopId;

@@ -12,6 +12,15 @@ const workOrderSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
+    trackingId: {
+      type: String,
+      required: true,
+      // unique: true,
+      trim: true,
+      UPPERCASE: true,
+    },
+
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",

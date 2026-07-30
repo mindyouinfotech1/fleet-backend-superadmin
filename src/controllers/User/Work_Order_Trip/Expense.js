@@ -119,6 +119,34 @@ export const getExpenseById = async (req, res) => {
   }
 };
 
+export const getExpensesByTripId = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+
+    const expenses = await Expense.find({
+      tripId: tripId,
+      isDeleted: false,
+    })
+      .populate("organizationId")
+      .populate("tripId")
+      .populate("driverId")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: expenses.length,
+      data: expenses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
 // UPDATE EXPENSE
 export const updateExpense = async (req, res) => {
   try {

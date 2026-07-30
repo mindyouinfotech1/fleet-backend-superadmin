@@ -49,7 +49,7 @@ const maintenanceHistorySchema = new mongoose.Schema(
 
     service_type: {
       type: String,
-      required: true,
+      // required: true,
     },
 
     last_service_date: {
@@ -101,7 +101,7 @@ const maintenanceHistorySchema = new mongoose.Schema(
 
     service_cost: {
       type: Number,
-      required: true,
+      // required: true,
     },
 
     invoice_file: {

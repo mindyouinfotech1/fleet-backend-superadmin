@@ -68,8 +68,7 @@ const PartReplacementSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Pending", "In Progress", "Completed", "Cancelled"],
-      default: "Pending",
+
       // required: true,
     },
     isDeleted: {

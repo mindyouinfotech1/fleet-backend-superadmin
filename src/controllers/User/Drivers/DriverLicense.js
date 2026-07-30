@@ -1,7 +1,7 @@
 import { DriverLicense } from "../../../models/User/Drivers/DriverLicense.js";
 import { Driver } from "../../../models/User/Drivers/Driver.js";
 import mongoose from "mongoose";
-const EXPIRY_WARNING_DAYS = 7; 
+const EXPIRY_WARNING_DAYS = 7;
 
 function calculateLicenseStatus(expiryDate) {
   if (!expiryDate) return "Active"; // ya "Pending" jo bhi default chahiye
@@ -116,7 +116,6 @@ export const createDriverLicense = async (req, res) => {
   }
 };
 
-
 export const updateDriverLicense = async (req, res) => {
   try {
     const updateData = { ...req.body };
@@ -157,7 +156,6 @@ export const updateDriverLicense = async (req, res) => {
   }
 };
 
-
 export const getAllDriverLicenses = async (req, res) => {
   try {
     const { driverId, countryCode, status, organizationId } = req.query;
@@ -173,7 +171,7 @@ export const getAllDriverLicenses = async (req, res) => {
 
     const licenses = await DriverLicense.find(filter)
       .populate("driverId")
-      .populate("verifiedBy")
+      // .populate("verifiedBy")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -188,7 +186,6 @@ export const getAllDriverLicenses = async (req, res) => {
     });
   }
 };
-
 
 export const getDriverLicenseById = async (req, res) => {
   try {
@@ -262,7 +259,6 @@ export const getAllDriverLicensesByDriver = async (req, res) => {
   }
 };
 
-
 export const deleteDriverLicense = async (req, res) => {
   try {
     const deleted = await DriverLicense.findOneAndUpdate(
@@ -298,31 +294,41 @@ export const verifyDriverLicense = async (req, res) => {
   try {
     const adminId = req.user?._id;
 
-    const updated = await DriverLicense.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: false },
-      {
-        verified: true,
-        verifiedBy: adminId,
-        verifiedAt: new Date(),
-      },
-      { new: true },
-    );
+    const license = await DriverLicense.findOne({
+      _id: req.params.id,
+      isDeleted: false,
+    });
 
-    if (!updated) {
+    if (!license) {
       return res.status(404).json({
         success: false,
         message: "Driver license not found",
       });
     }
 
+    // Toggle verification
+    license.verified = !license.verified;
+
+    if (license.verified) {
+      license.verifiedBy = adminId;
+      license.verifiedAt = new Date();
+    } else {
+      license.verifiedBy = null;
+      license.verifiedAt = null;
+    }
+
+    await license.save();
+
     // SOCKET EVENT
     const io = req.app.get("io");
-    if (io) io.emit("driverLicenseVerified", updated);
+    if (io) io.emit("driverLicenseVerified", license);
 
     return res.status(200).json({
       success: true,
-      message: "Driver license verified successfully",
-      data: updated,
+      message: license.verified
+        ? "Driver license verified successfully"
+        : "Driver license verification cancelled successfully",
+      data: license,
     });
   } catch (error) {
     return res.status(500).json({
@@ -331,7 +337,6 @@ export const verifyDriverLicense = async (req, res) => {
     });
   }
 };
-
 
 export const updateLicenseStatus = async (req, res) => {
   try {

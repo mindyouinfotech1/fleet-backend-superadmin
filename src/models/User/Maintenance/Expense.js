@@ -66,8 +66,6 @@ const expenseSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Rejected", "Paid"],
-      default: "Pending",
     },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },

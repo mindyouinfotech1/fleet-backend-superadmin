@@ -17,16 +17,6 @@ const payrollRecordSchema = new mongoose.Schema(
     wagesType: {
       type: String,
       required: true,
-      enum: [
-        "Hourly",
-        "Daily",
-        "Weekly",
-        "BiWeekly",
-        "Monthly",
-        "TripBased",
-        "Commission",
-        "Custom",
-      ],
       trim: true,
     },
 
@@ -47,8 +37,6 @@ const payrollRecordSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Active", "Inactive"],
-      default: "Active",
     },
 
     // Optional

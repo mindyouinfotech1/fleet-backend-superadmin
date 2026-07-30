@@ -382,10 +382,10 @@ export const changeDriverStatus = async (req, res) => {
       });
     }
 
-    if (!["Active", "Inactive"].includes(driverStatus)) {
+    if (!["active", "inactive"].includes(driverStatus)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid driver status. Use Active or Inactive",
+        message: "Invalid driver status. Use active or inactive",
       });
     }
 

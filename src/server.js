@@ -33,10 +33,12 @@ import tripRoute from "./routes/User/Work_Order_Trip/TripRoute.js";
 import hotelRoutes from "./routes/User/Work_Order_Trip/Hotel.js";
 import tripExpenseRoutes from "./routes/User/Work_Order_Trip/Expense.js";
 import inspectionQuestionRoutes from "./routes/User/Work_Order_Trip/EquipmentQuestion.js";
-import ispCategoryRoutes from "./routes/User/Work_Order_Trip/Isp_Category.js";
+// import ispCategoryRoutes from "./routes/User/Work_Order_Trip/Isp_Category.js";
 import insp_QuestionRoutes from "./routes/User/Work_Order_Trip/Insp_Question.js";
 import driverEmailOtpRoutes from "./routes/SuperAdmin/Email/Driver/EmailOtp.js";
 import driverForgetPasswordRoutes from "./routes/SuperAdmin/Email/Driver/forgetpass.js";
+import statusConfigRoutes from "./routes/StatusConfig/StatusConfig.js";
+import inspectionChecklistRoutes from "./routes/User/Work_Order_Trip/InspectionChecklist.js";
 
 dotenv.config();
 connectDB();
@@ -73,6 +75,8 @@ app.get("/api/private-file", (req, res) => {
   res.sendFile(absPath);
 });
 
+app.use("/api/status-config", statusConfigRoutes);
+
 app.use("/api/branches", branchRoutes);
 
 ///// Trip Routes
@@ -82,8 +86,8 @@ app.use("/api/hotels", hotelRoutes);
 app.use("/api/trip-expenses", tripExpenseRoutes);
 app.use("/api/insp-questions", insp_QuestionRoutes);
 
-app.use("/api/inspection-questions", inspectionQuestionRoutes);
-app.use("/api/isp-categories", ispCategoryRoutes);
+// app.use("/api/inspection-questions", inspectionQuestionRoutes);
+app.use("/api/inspectionchecklist", inspectionChecklistRoutes);
 
 // WORK ORDER ROUTES
 app.use("/api/work-orders", workOrderRoutes);

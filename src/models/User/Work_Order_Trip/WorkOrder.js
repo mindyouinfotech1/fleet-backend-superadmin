@@ -58,7 +58,7 @@ const workOrderSchema = new mongoose.Schema(
 
     workStatus: {
       type: String,
-      default: "Pending",
+      // default: "Pending",
     },
 
     documents: [
@@ -88,7 +88,7 @@ const workOrderSchema = new mongoose.Schema(
       paymentStatus: {
         type: String,
         // enum: ["Pending", "Partial", "Paid"],
-        default: "Pending",
+        // default: "Pending",
       },
 
       advanceReceived: {
@@ -143,7 +143,7 @@ const workOrderSchema = new mongoose.Schema(
     // Record Status
     status: {
       type: String,
-      default: "Active",
+      // default: "Active",
     },
 
     description: {
@@ -152,8 +152,7 @@ const workOrderSchema = new mongoose.Schema(
     },
 
     verifyStatus: {
-      type: String,
-      default: "Pending",
+      type: Boolean,
     },
 
     verifiedAt: {

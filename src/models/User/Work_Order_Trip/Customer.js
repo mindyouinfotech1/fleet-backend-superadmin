@@ -39,7 +39,7 @@ const customerSchema = new mongoose.Schema(
 
     country: {
       type: Number,
-      required: true,
+      // required: true,
       trim: true,
     },
 
@@ -62,7 +62,6 @@ const customerSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      default: "Active",
     },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },

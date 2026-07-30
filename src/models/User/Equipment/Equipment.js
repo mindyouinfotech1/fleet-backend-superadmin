@@ -42,7 +42,7 @@ const equipmentSchema = new mongoose.Schema(
     equipmentStatus: {
       type: String,
       //   enum: ["Active", "Inactive", "Under Maintenance", "Sold"],
-      default: "Active",
+      // default: "Active",
     },
     loadCapacity: { type: Number },
     capacityUnit: {
@@ -94,8 +94,8 @@ const equipmentSchema = new mongoose.Schema(
       },
       ownershipType: {
         type: String,
-        enum: ["Owned", "Leased"],
-        default: "Owned",
+        // enum: ["Owned", "Leased"],
+        // default: "Owned",
       },
       leaseStartDate: { type: Date },
       leaseEndDate: { type: Date },
@@ -130,15 +130,15 @@ const equipmentSchema = new mongoose.Schema(
     =========================================================== */
     status: {
       type: String,
-      enum: [
-        "pending",
-        "in_progress",
-        "approved",
-        "rejected",
-        "completed",
-        "cancelled",
-      ],
-      default: "pending",
+      // enum: [
+      //   "pending",
+      //   "in_progress",
+      //   "approved",
+      //   "rejected",
+      //   "completed",
+      //   "cancelled",
+      // ],
+      // default: "pending",
     },
     isVerified: { type: Boolean, default: false },
     verifiedBy: {

@@ -14,6 +14,8 @@ import {
   deleteQuestion,
 } from "../../../controllers/User/Work_Order_Trip/Insp_Question.js";
 
+import { generateAiInspectionQuestions } from "../../../controllers/User/Work_Order_Trip/EquipmentQuestion.js";
+
 const router = express.Router();
 
 /* ---------- Document Level ---------- */
@@ -36,5 +38,7 @@ router.delete(
   "/:id/categories/:categoryId/questions/:questionId",
   deleteQuestion,
 );
+
+router.post("/ai-generate", generateAiInspectionQuestions);
 
 export default router;

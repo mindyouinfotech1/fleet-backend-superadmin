@@ -61,9 +61,6 @@ const workshopSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["active", "inactive"],
-      default: "active",
-      index: true,
     },
     isDeleted: {
       type: Boolean,

@@ -29,22 +29,14 @@ export const createTrip = async (req, res) => {
     } = req.body;
 
     // 1. Required fields validation
-    if (
-      !organizationId ||
-      !workOrderIds ||
-      // !workOrderIds.length ||
-      !equipmentIds ||
-      // !equipmentIds.length ||
-      !primaryDriver
-    ) {
+    if (!organizationId || !workOrderIds || !equipmentIds) {
       return res.status(400).json({
         success: false,
         message:
-          "Required fields are missing (organizationId, workOrderIds, equipmentIds, primaryDriver)",
+          "Required fields are missing (organizationId, workOrderIds, equipmentIds)",
       });
     }
 
-   
     // 3. WorkOrders aur Equipments same organization ke hain ya nahi (sanity check)
     const [workOrderCount, equipmentCount, driverExists] = await Promise.all([
       WorkOrder.countDocuments({
@@ -57,7 +49,7 @@ export const createTrip = async (req, res) => {
       }),
       Driver.findOne({ _id: primaryDriver, organizationId }),
     ]);
-  
+    console.log("hello");
     if (workOrderCount !== workOrderIds.length) {
       return res.status(400).json({
         success: false,
@@ -71,17 +63,17 @@ export const createTrip = async (req, res) => {
         message: "One or more equipmentIds are invalid for this organization",
       });
     }
-    
-    if (!driverExists) {
-      return res.status(404).json({
-        success: false,
-        message: "Primary driver not found in this organization",
-      });
-    }
-    
+
+    // if (!driverExists) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "Primary driver not found in this organization",
+    //   });
+    // }
+
     // 4. Unique tripCode generate karo (organization ke andar)
     const tripCode = await generateCode(organizationId, "trip", "TRP");
-  
+
     // 5. Trip create karo
     const trip = await Trip.create({
       organizationId,
@@ -100,7 +92,7 @@ export const createTrip = async (req, res) => {
       speedLimit,
       remarks,
     });
-  
+
     const populatedTrip = await Trip.findById(trip._id);
     // .populate("workOrderIds")
     // .populate("equipmentIds")

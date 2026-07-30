@@ -4,6 +4,7 @@ import {
   createExpense,
   getAllExpenses,
   getExpenseById,
+  getExpensesByTripId,
   updateExpense,
   deleteExpense,
   updateExpenseStatus,
@@ -34,6 +35,8 @@ router.post(
 router.get("/", getAllExpenses);
 
 router.get("/:id", getExpenseById);
+
+router.get("/trip/:tripId", getExpensesByTripId);
 
 router.put(
   "/:id",

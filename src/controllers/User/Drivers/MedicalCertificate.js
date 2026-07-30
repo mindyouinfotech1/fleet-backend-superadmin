@@ -329,7 +329,6 @@ export const getMedicalCertificateById = async (req, res) => {
 
 export const verifyMedicalCertificate = async (req, res) => {
   try {
-    const { status, reason } = req.body;
     const adminId = req.user?._id;
 
     const certificate = await MedicalCertificate.findById(req.params.id);
@@ -341,29 +340,37 @@ export const verifyMedicalCertificate = async (req, res) => {
       });
     }
 
-    // certificate.status = status;
+    // Toggle Verify / Unverify
+    certificate.isVerified = !certificate.isVerified;
 
-    if (status === "active") {
-      certificate.isVerified = true;
-      // certificate.verifiedBy = adminId;
-      certificate.verifiedAt = new Date();
+    if (certificate.isVerified) {
       certificate.isEligible = true;
+      certificate.verifiedAt = new Date();
+      certificate.verifiedBy = adminId;
+    } else {
+      certificate.isEligible = false;
+      certificate.verifiedAt = null;
+      certificate.verifiedBy = null;
     }
 
     await certificate.save();
 
-    //  SOCKET EVENT
+    // SOCKET EVENT
     const io = req.app.get("io");
-    if (io)
+
+    if (io) {
       io.emit("medicalCertificateVerified", {
         id: certificate._id,
-        status: certificate.status,
+        isVerified: certificate.isVerified,
         certificate,
       });
+    }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      message: `Certificate ${status}`,
+      message: certificate.isVerified
+        ? "Certificate verified successfully"
+        : "Certificate verification cancelled successfully",
       data: certificate,
     });
   } catch (error) {

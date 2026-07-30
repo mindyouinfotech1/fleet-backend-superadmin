@@ -633,14 +633,6 @@ export const restoreEquipment = async (req, res) => {
 export const updateEquipmentStatus = async (req, res) => {
   try {
     const { equipmentStatus, reason } = req.body;
-
-    const allowed = ["Active", "Inactive", "Under Maintenance", "Sold"];
-    if (!allowed.includes(equipmentStatus)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid equipmentStatus value" });
-    }
-
     const equipment = await Equipment.findById(req.params.id);
     if (!equipment) {
       return res

@@ -1,17 +1,10 @@
 import mongoose from "mongoose";
 import { InspectionQuestion } from "../../../models/User/Work_Order_Trip/Insp_Question.js";
 
-/* ======================================================
-   HELPER — organizationId hamesha logged-in user se lena
-   (frontend se bhejwana mat, security risk hai)
-====================================================== */
+
 const getOrgId = (req) => req.user?.organizationId || req.user?._id;
 
-/* ======================================================
-   1. CREATE — Naya InspectionQuestion doc banate waqt
-   (Ek equipment ke liye ek hi doc rahega, categories uske
-   andar array me honge)
-====================================================== */
+
 export const createInspectionQuestion = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -60,10 +53,7 @@ export const createInspectionQuestion = async (req, res) => {
   }
 };
 
-/* ======================================================
-   2. GET ALL — Organization ke sabhi inspection question sets
-   (optional filter: equipmentId, search by categoryName/question)
-====================================================== */
+
 export const getAllInspectionQuestions = async (req, res) => {
   try {
     // console.log("req.query", req.query);
@@ -118,9 +108,7 @@ export const getAllInspectionQuestions = async (req, res) => {
   }
 };
 
-/* ======================================================
-   3. GET BY ID — Single doc (poori categories + questions)
-====================================================== */
+
 export const getInspectionQuestionById = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -153,11 +141,7 @@ export const getInspectionQuestionById = async (req, res) => {
   }
 };
 
-/* ======================================================
-   3B. GET BY EQUIPMENT ID — Direct equipment se fetch
-   (Tumhare InspectionQuestionManager component ke liye useful,
-   jaha equipment select karte hi uske questions load karne hain)
-====================================================== */
+
 export const getInspectionQuestionByEquipment = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -188,10 +172,7 @@ export const getInspectionQuestionByEquipment = async (req, res) => {
   }
 };
 
-/* ======================================================
-   4. UPDATE (FULL DOC) — Poora categories array replace karna
-   (jab frontend se poora form submit ho, useFieldArray wala pura data)
-====================================================== */
+
 export const updateInspectionQuestion = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -233,9 +214,6 @@ export const updateInspectionQuestion = async (req, res) => {
   }
 };
 
-/* ======================================================
-   5. DELETE (FULL DOC) — Poora equipment ka inspection set delete
-====================================================== */
 export const deleteInspectionQuestion = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -271,9 +249,7 @@ export const deleteInspectionQuestion = async (req, res) => {
   }
 };
 
-/* ======================================================
-   6. ADD CATEGORY — Ek naya category push karo existing doc me
-====================================================== */
+
 export const addCategory = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -352,9 +328,6 @@ export const updateCategory = async (req, res) => {
   }
 };
 
-/* ======================================================
-   8. DELETE CATEGORY — Poori category (uske sabhi questions samet) hatao
-====================================================== */
 export const deleteCategory = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -390,9 +363,7 @@ export const deleteCategory = async (req, res) => {
   }
 };
 
-/* ======================================================
-   9. ADD QUESTION — Kisi specific category ke andar ek question push karo
-====================================================== */
+
 export const addQuestion = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -447,10 +418,7 @@ export const addQuestion = async (req, res) => {
   }
 };
 
-/* ======================================================
-   10. UPDATE QUESTION — Ek specific question edit karna
-   (arrayFilters use kiya hai kyunki double-nested array hai)
-====================================================== */
+
 export const updateQuestion = async (req, res) => {
   try {
     // const organizationId = getOrgId(req);
@@ -499,9 +467,7 @@ export const updateQuestion = async (req, res) => {
   }
 };
 
-/* ======================================================
-   11. DELETE QUESTION — Ek specific question hatao category ke andar se
-====================================================== */
+
 export const deleteQuestion = async (req, res) => {
   try {
     const organizationId = getOrgId(req);

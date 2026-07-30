@@ -379,30 +379,62 @@ export const getCustomers = async (req, res) => {
 
 // ================= CHANGE STATUS =================
 
+// export const changeCustomerStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const customer = await Customer.findById(id);
+
+//     if (!customer) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Customer not found.",
+//       });
+//     }
+
+//     customer.status = customer.status === "Active" ? "Inactive" : "Active";
+
+//     await customer.save();
+
+//     // SOCKET EVENT
+
+//     const io = req.app.get("io");
+
+//     if (io) {
+//       io.emit("customerStatusChanged", customer);
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Customer status updated.",
+//       data: customer,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: "Error updating status.",
+//     });
+//   }
+// };
+
 export const changeCustomerStatus = async (req, res) => {
   try {
     const { id } = req.params;
-
     const customer = await Customer.findById(id);
 
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: "Customer not found.",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found." });
     }
 
-    customer.status = customer.status === "Active" ? "Inactive" : "Active";
+    // Hardcoded "Active"/"Inactive" ki jagah generic toggle karo
+    customer.status = customer.status === "active" ? "inactive" : "active";
 
     await customer.save();
 
-    // SOCKET EVENT
-
     const io = req.app.get("io");
-
-    if (io) {
-      io.emit("customerStatusChanged", customer);
-    }
+    if (io) io.emit("customerStatusChanged", customer);
 
     return res.status(200).json({
       success: true,
@@ -410,9 +442,8 @@ export const changeCustomerStatus = async (req, res) => {
       data: customer,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Error updating status.",
-    });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error updating status." });
   }
 };

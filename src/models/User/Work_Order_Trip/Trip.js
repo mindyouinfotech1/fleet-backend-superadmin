@@ -29,7 +29,7 @@ const tripSchema = new mongoose.Schema(
     },
     tripName: {
       type: String,
-      required: true,
+      // required: true,
       trim: true,
     },
     tripType: {
@@ -41,7 +41,7 @@ const tripSchema = new mongoose.Schema(
     primaryDriver: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Driver",
-      required: true,
+      // required: true,
     },
 
     secondaryDriverIds: [

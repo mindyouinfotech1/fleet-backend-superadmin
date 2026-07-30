@@ -30,12 +30,12 @@ const hotelSchema = new mongoose.Schema(
 
     latitude: {
       type: Number,
-      required: true,
+      // required: true,
     },
 
     longitude: {
       type: Number,
-      required: true,
+      // required: true,
     },
 
     checkIn: {
@@ -83,20 +83,11 @@ const hotelSchema = new mongoose.Schema(
 
     paymentStatus: {
       type: String,
-    //   enum: ["Pending", "Paid", "Cancelled", "Refunded"],
-      default: "Pending",
+      //   enum: ["Pending", "Paid", "Cancelled", "Refunded"],
     },
 
     bookingStatus: {
       type: String,
-    //   enum: [
-    //     "Pending",
-    //     "Confirmed",
-    //     "Checked-In",
-    //     "Checked-Out",
-    //     "Cancelled",
-    //   ],
-      default: "Pending",
     },
 
     contactPerson: {
@@ -127,7 +118,7 @@ const hotelSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const Hotel = mongoose.model("Hotel", hotelSchema);

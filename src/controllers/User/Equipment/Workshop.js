@@ -148,6 +148,49 @@ export const getAllWorkshops = async (req, res) => {
   }
 };
 
+
+export const updateWorkshopStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+ 
+
+    const workshop = await Workshop.findById(req.params.id);
+
+    if (!workshop) {
+      return res.status(404).json({
+        success: false,
+        message: "Workshop not found",
+      });
+    }
+
+    workshop.status = status;
+
+    await workshop.save();
+
+
+    // SOCKET EVENT
+    const io = req.app.get("io");
+
+    if (io) {
+      io.emit("workshopStatusUpdated", workshop);
+    }
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Workshop status updated successfully",
+      data: workshop,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const getWorkshopById = async (req, res) => {
   try {
     const { id } = req.params;

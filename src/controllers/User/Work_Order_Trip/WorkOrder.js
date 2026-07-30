@@ -159,79 +159,6 @@ export const deleteWorkOrderDocument = async (req, res) => {
   }
 };
 
-// export const getAllWorkOrders = async (req, res) => {
-//   try {
-//     const {
-//       organizationId,
-//       customerId,
-//       workStatus,
-//       status,
-//       verifyStatus,
-//       jobType,
-//       search,
-//       startDate,
-//       endDate,
-//       page = 1,
-//       limit = 10,
-//       sortBy = "createdAt",
-//       sortOrder = "desc",
-//     } = req.query;
-
-//     const filter = { isDeleted: false };
-//     console.log("hello");
-//     if (organizationId) filter.organizationId = organizationId;
-//     // if (customerId) filter.customerId = customerId;
-//     if (workStatus) filter.workStatus = workStatus;
-//     if (status) filter.status = status;
-//     if (verifyStatus) filter.verifyStatus = verifyStatus;
-//     if (jobType) filter.jobType = { $regex: jobType, $options: "i" };
-
-//     if (startDate || endDate) {
-//       filter.startDate = {};
-//       if (startDate) filter.startDate.$gte = new Date(startDate);
-//       if (endDate) filter.startDate.$lte = new Date(endDate);
-//     }
-
-//     if (search) {
-//       filter.$or = [
-//         { customerName: { $regex: search, $options: "i" } },
-//         { projectContractId: { $regex: search, $options: "i" } },
-//         { "billing.invoiceNumber": { $regex: search, $options: "i" } },
-//       ];
-//     }
-
-//     const skip = (Number(page) - 1) * Number(limit);
-//     const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
-
-//     const [workOrders, total] = await Promise.all([
-//       WorkOrder.find(filter)
-//         .populate("organizationId", "name")
-//         .sort(sort)
-//         .skip(skip)
-//         .limit(Number(limit)),
-//       WorkOrder.countDocuments(filter),
-//     ]);
-
-//     return sendResponse(res, 200, true, "Work orders fetched successfully", {
-//       workOrders,
-//       pagination: {
-//         total,
-//         page: Number(page),
-//         limit: Number(limit),
-//         totalPages: Math.ceil(total / Number(limit)),
-//       },
-//     });
-//   } catch (error) {
-//     console.error("getAllWorkOrders error:", error);
-//     return sendResponse(
-//       res,
-//       500,
-//       false,
-//       error.message || "Failed to fetch work orders",
-//     );
-//   }
-// };
-
 export const getAllWorkOrders = async (req, res) => {
   try {
     const {
@@ -557,42 +484,101 @@ export const verifyWorkOrder = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const workOrder = await WorkOrder.findOneAndUpdate(
-      { _id: id, isDeleted: false },
-      {
-        $set: {
-          verifyStatus: "Verified",
-          verifiedAt: new Date(),
-          rejectionReason: "",
-        },
-      },
-      { new: true },
-    );
-
-    const io = req.app.get("io");
-    if (io) io.emit("workOrderVerified", workOrder);
+    const workOrder = await WorkOrder.findOne({
+      _id: id,
+      isDeleted: false,
+    });
 
     if (!workOrder) {
       return sendResponse(res, 404, false, "Work order not found");
     }
 
+    // Toggle verifyStatus
+    workOrder.verifyStatus = !workOrder.verifyStatus;
+
+    if (workOrder.verifyStatus) {
+      // Verified
+      workOrder.verifiedAt = new Date();
+      workOrder.verifiedBy = req.user?._id;
+      workOrder.rejectionReason = undefined;
+    } else {
+      // Unverified
+      workOrder.verifiedAt = undefined;
+      workOrder.verifiedBy = undefined;
+    }
+
+    await workOrder.save();
+
+    req.io
+      ?.to(`org_${workOrder.organizationId}`)
+      .emit("workOrderVerificationUpdated", workOrder);
+
     return sendResponse(
       res,
       200,
       true,
-      "Work order verified successfully",
+      `Work order ${
+        workOrder.verifyStatus ? "verified" : "unverified"
+      } successfully`,
       workOrder,
     );
   } catch (error) {
     console.error("verifyWorkOrder error:", error);
-    return sendResponse(
-      res,
-      500,
-      false,
-      error.message || "Failed to verify work order",
-    );
+    return sendResponse(res, 500, false, error.message || "Failed");
   }
 };
+
+// export const verifyWorkOrder = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { action, rejectionReason } = req.body; // action: "verify" | "reject"
+
+//     if (!["verify", "reject"].includes(action)) {
+//       return sendResponse(
+//         res,
+//         400,
+//         false,
+//         "Invalid action. Use 'verify' or 'reject'",
+//       );
+//     }
+
+//     const workOrder = await WorkOrder.findOne({ _id: id, isDeleted: false });
+//     if (!workOrder) {
+//       return sendResponse(res, 404, false, "Work order not found");
+//     }
+
+//     if (action === "verify") {
+//       workOrder.verifyStatus = true;
+//       workOrder.rejectionReason = undefined;
+//       workOrder.verifiedAt = new Date();
+//       workOrder.verifiedBy = req.user?._id;
+//     } else {
+//       if (!rejectionReason) {
+//         return sendResponse(res, 400, false, "Rejection reason is required");
+//       }
+//       workOrder.verifyStatus = false;
+//       workOrder.rejectionReason = rejectionReason;
+//       workOrder.verifiedAt = undefined;
+//     }
+
+//     await workOrder.save();
+
+//     const eventName =
+//       action === "verify" ? "workOrderVerified" : "workOrderRejected";
+//     req.io?.to(`org_${workOrder.organizationId}`).emit(eventName, workOrder);
+
+//     return sendResponse(
+//       res,
+//       200,
+//       true,
+//       action === "verify" ? "Work order verified" : "Work order cancelled",
+//       workOrder,
+//     );
+//   } catch (error) {
+//     console.error("updateWorkOrderVerification error:", error);
+//     return sendResponse(res, 500, false, error.message || "Failed");
+//   }
+// };
 
 export const rejectWorkOrder = async (req, res) => {
   try {

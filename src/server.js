@@ -39,6 +39,9 @@ import driverEmailOtpRoutes from "./routes/SuperAdmin/Email/Driver/EmailOtp.js";
 import driverForgetPasswordRoutes from "./routes/SuperAdmin/Email/Driver/forgetpass.js";
 import statusConfigRoutes from "./routes/StatusConfig/StatusConfig.js";
 import inspectionChecklistRoutes from "./routes/User/Work_Order_Trip/InspectionChecklist.js";
+import drivingViolationRoutes from "./routes/User/Drivers/Others/DrivingViolation.js";
+import drivingDisqualificationRoutes from "./routes/User/Drivers/Others/Drivingdisqualification.js";
+import drivingAccidentRoutes from "./routes/User/Drivers/Others/Drivingaccidentroutes.js";
 
 dotenv.config();
 connectDB();
@@ -106,6 +109,9 @@ app.use("/api/driver-emails", driverEmailOtpRoutes);
 app.use("/api/driver-forgot-password", driverForgetPasswordRoutes);
 
 app.use("/api/driver-status", driverStatusRoutes);
+app.use("/api/driving-violations", drivingViolationRoutes);
+app.use("/api/driving-disqualifications", drivingDisqualificationRoutes);
+app.use("/api/driving-accidents", drivingAccidentRoutes);
 
 // Routes
 app.use("/api/business-user", businessUserRoutes);

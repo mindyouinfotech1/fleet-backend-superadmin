@@ -42,6 +42,8 @@ import inspectionChecklistRoutes from "./routes/User/Work_Order_Trip/InspectionC
 import drivingViolationRoutes from "./routes/User/Drivers/Others/DrivingViolation.js";
 import drivingDisqualificationRoutes from "./routes/User/Drivers/Others/Drivingdisqualification.js";
 import drivingAccidentRoutes from "./routes/User/Drivers/Others/Drivingaccidentroutes.js";
+import trainingRoutes from "./routes/User/Drivers/Others/Training.js";
+import trainingAssignedRoutes from "./routes/User/Drivers/Others/TrainingAssigned.js";
 
 dotenv.config();
 connectDB();
@@ -112,6 +114,8 @@ app.use("/api/driver-status", driverStatusRoutes);
 app.use("/api/driving-violations", drivingViolationRoutes);
 app.use("/api/driving-disqualifications", drivingDisqualificationRoutes);
 app.use("/api/driving-accidents", drivingAccidentRoutes);
+app.use("/api/trainings", trainingRoutes);
+app.use("/api/training-assigned", trainingAssignedRoutes);
 
 // Routes
 app.use("/api/business-user", businessUserRoutes);

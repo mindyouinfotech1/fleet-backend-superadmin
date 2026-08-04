@@ -10,4 +10,5 @@ export const UPLOAD_PATHS = {
   MAINTENANCE_HISTORY_INVOICE: "private/uploads/maintenance-history",
   HOTEL_RECEIPT: "private/uploads/hotelReceipt",
   EXPENSE: "private/uploads/expenses",
+  TRAINING_ASSIGNED: "private/uploads/training-assigned",
 };
